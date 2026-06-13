@@ -1,23 +1,23 @@
 # Hermes Self-Hosted
 
-Deploy do Hermes Agent em servidor doméstico (bare-metal ou virtualizado).
+Deploy Hermes Agent on a home server (bare-metal or virtualized).
 
-## Objetivo
+## Goal
 
-Rodar o Hermes Agent 24/7 em hardware dedicado, com instalação limpa e documentada passo a passo.
+Run Hermes Agent 24/7 on dedicated hardware, with a clean, step-by-step documented installation.
 
 ## Stack
 
-- **SO**: Debian Server
-- **Hardware**: Fujitsu, 16GB RAM, SSD 120GB, sem GPU
-- **Modelos**: API externa (OpenRouter) — inferência local a ser avaliada posteriormente
+- **OS**: Debian Server
+- **Hardware**: Fujitsu, 16GB RAM, 120GB SSD, no GPU
+- **Models**: External API (OpenRouter) — local inference to be evaluated later
 
-## Estrutura do Projeto
+## Project Structure
 
 ```
 .
 ├── README.md
-├── docs/           # Documentação
-├── scripts/        # Scripts de instalação e configuração
-└── config/         # Arquivos de configuração do Hermes
+├── docs/           # Documentation
+├── scripts/        # Installation and configuration scripts
+└── config/         # Hermes configuration files
 ```
