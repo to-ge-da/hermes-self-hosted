@@ -7,19 +7,23 @@ Static IP and DNS setup for a Debian home server.
 A DHCP-assigned IP can change after a reboot or lease expiry. For a server running 24/7, a static IP ensures:
 
 - SSH access remains stable
-- Port forwarding rules on the router stay valid
 - Other services on the network can reach the server reliably
 
-## Choosing an IP
+## How to avoid IP conflicts
 
-Pick an IP outside your router's DHCP range to avoid conflicts.
+Pick an IP outside your router's DHCP range. To find the DHCP range:
 
-**Example:**
-- Router IP: `192.168.1.1`
-- DHCP range: `192.168.1.100` – `192.168.1.200`
-- Static IP: `192.168.1.50` (outside the range, easy to remember)
+1. Open your router's admin panel (usually `192.168.1.1` in the browser)
+2. Look for **LAN**, **DHCP Server**, or **Network Settings**
+3. Find the **DHCP range** or **IP pool** (example: `192.168.1.100` to `192.168.1.200`)
 
-Check your current network configuration:
+Choose an IP **outside** that range:
+- If DHCP is `.100` – `.200`, pick `.50`
+- If DHCP is `.50` – `.150`, pick `.200`
+
+This way the router will never assign your server's IP to another device.
+
+No changes needed on the router — just pick an IP that's not in the pool.
 
 ```bash
 ip addr show
@@ -128,12 +132,11 @@ Apply:
 sudo systemctl restart systemd-resolved
 ```
 
-## Router configuration
+## Verify your IP is outside the DHCP pool
 
-On your home router, set up:
+Check your router's admin panel to confirm the DHCP range, then verify your chosen IP is outside it.
 
-1. **DHCP reservation** or ensure the static IP is outside the DHCP pool
-2. **Port forwarding** (if accessing from outside): forward port 22 to the server's IP
+No other router configuration is needed for local network access.
 
 ## Verification checklist
 
