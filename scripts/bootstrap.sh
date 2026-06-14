@@ -137,7 +137,8 @@ apt install -y \
     ufw \
     unattended-upgrades \
     apt-listchanges \
-    tree
+    tree \
+    nmap
 
 # ──────────────────────
 # 4. Hostname
