@@ -54,7 +54,31 @@ if [[ ! -d "$SSH_CONFIG_DIR" ]]; then
     mkdir -p "$SSH_CONFIG_DIR"
 fi
 
-cat > "$SSH_HARDENED" << 'EOF'
+# ──────────────────────
+# Detect users with SSH keys for AllowUsers
+# ──────────────────────
+# Scans /home/*/.ssh/authorized_keys for non-empty files.
+# Hermes is always allowed; other users are auto-detected.
+# This avoids hardcoding the admin username (which is chosen
+# interactively during bootstrap.sh).
+SSH_USERS="hermes"
+for keyfile in /home/*/.ssh/authorized_keys; do
+    if [[ -s "$keyfile" ]]; then
+        username=$(echo "$keyfile" | cut -d/ -f3)
+        if [[ "$username" != "hermes" ]]; then
+            SSH_USERS="$SSH_USERS $username"
+        fi
+    fi
+done
+
+if [[ "$SSH_USERS" == "hermes" ]]; then
+    warn "No SSH keys found for any user other than hermes."
+    warn "AllowUsers will only include 'hermes'. Add admin keys before running this script."
+fi
+
+log "AllowUsers: $SSH_USERS"
+
+cat > "$SSH_HARDENED" << EOF
 # ├─────────────────
 # │ SSH hardening — applied on top of the default config
 # │ Configuring via drop-in preserves updates to sshd_config
@@ -70,6 +94,7 @@ LoginGraceTime 20
 ClientAliveInterval 300
 ClientAliveCountMax 2
 X11Forwarding no
+AllowUsers $SSH_USERS
 EOF
 
 chmod 600 "$SSH_HARDENED"

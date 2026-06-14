@@ -5,16 +5,16 @@ Initial system setup for a fresh Debian Server installation.
 ## What it does
 
 | Step | Description |
-|------|-------------|
-| System update | `apt update && apt upgrade` |
-| Essential packages | sudo, openssh-server, curl, wget, git, vim, ufw, unattended-upgrades, apt-listchanges, tree, nmap |
-| Hostname | Set server hostname |
-| Timezone | Configure timezone interactively |
-| Locale | Set to `en_US.UTF-8` |
-| Admin user | Detects the current sudo user (created during Debian install), configures SSH key |
-| Hermes user | Creates a dedicated agent user `hermes` (no sudo, key-only) |
-| Root lock | Locks root account |
-| SSH drop-in dir | Creates `/etc/ssh/sshd_config.d/` |
+||------|-------------|
+|| System update | `apt update && apt upgrade` |
+|| Essential packages | sudo, openssh-server, curl, wget, git, vim, ufw, unattended-upgrades, apt-listchanges, tree, nmap |
+|| Hostname | Set server hostname |
+|| Timezone | Configure timezone interactively |
+|| Locale | Set to `en_US.UTF-8` |
+|| Admin user | Detected via `$SUDO_USER` — pre-existing from Debian install, no changes made |
+|| Hermes user | Creates a dedicated agent user `hermes` (no sudo, key-only) |
+|| Root lock | Locks root account |
+|| SSH drop-in dir | Creates `/etc/ssh/sshd_config.d/` |
 
 ## Essential packages
 
@@ -47,16 +47,15 @@ sudo ./bootstrap.sh
 
 The script is interactive — it will ask for:
 - Hostname
-- SSH public key for admin user (optional — skips if already configured)
 - SSH public key for hermes user
 
-The admin user is **detected automatically** via `$SUDO_USER` — the user invoking `sudo`. This is the user created during Debian OS installation.
+The admin user is **detected automatically** via `$SUDO_USER` — the user invoking `sudo`. This is the user already created during Debian OS installation. SSH key for the admin is not configured by this script.
 
 ## Users after bootstrap
 
 | User | Sudo | Password | Auth |
 |------|------|----------|------|
-| `<your-user>` | Yes (via sudo group, from OS install) | As configured during Debian install | SSH key (optional) |
+| `<your-user>` | Yes (via sudo group, from OS install) | As configured during Debian install | SSH key (from Debian install or manual) |
 | `hermes` | No | Disabled | SSH key only |
 
 ## After running

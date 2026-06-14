@@ -1,7 +1,10 @@
 #!/bin/bash
 #
-# bootstrap.sh — Initial system setup: SSH, base configuration
-# Run with sudo from the user created during Debian installation.
+# bootstrap.sh — Initial system setup: creates hermes user, base configuration
+# Run as root on a fresh Debian Server installation.
+#
+# Pre-condition: the admin user already exists (created during Debian OS
+# installation). This script does NOT create the admin user — only hermes.
 #
 # Usage:
 #   chmod +x bootstrap.sh
@@ -105,30 +108,11 @@ fi
 log "Detected admin user: $ADMIN_USER"
 
 # ──────────────────────
-# 7. Admin SSH key (optional)
+# 7. Log current user
 # ──────────────────────
-log "Setting up SSH for $ADMIN_USER..."
-
-mkdir -p "/home/$ADMIN_USER/.ssh"
-chmod 700 "/home/$ADMIN_USER/.ssh"
-
-if [[ -s "/home/$ADMIN_USER/.ssh/authorized_keys" ]]; then
-    log "SSH key already configured for $ADMIN_USER, skipping."
-else
-    read -rp "Paste the SSH public key for $ADMIN_USER (or press Enter to skip): " ADMIN_SSH_KEY
-
-    if [[ -n "$ADMIN_SSH_KEY" ]]; then
-        echo "$ADMIN_SSH_KEY" > "/home/$ADMIN_USER/.ssh/authorized_keys"
-        chmod 600 "/home/$ADMIN_USER/.ssh/authorized_keys"
-        chown -R "$ADMIN_USER:$ADMIN_USER" "/home/$ADMIN_USER/.ssh"
-        log "SSH key added for $ADMIN_USER."
-    else
-        warn "No SSH key provided for $ADMIN_USER. You will need to add one manually."
-        touch "/home/$ADMIN_USER/.ssh/authorized_keys"
-        chmod 600 "/home/$ADMIN_USER/.ssh/authorized_keys"
-        chown -R "$ADMIN_USER:$ADMIN_USER" "/home/$ADMIN_USER/.ssh"
-    fi
-fi
+# The admin user already exists — created during Debian installation.
+# This script does not create or configure the admin user.
+log "Admin user: $ADMIN_USER (pre-existing from Debian installation)"
 
 # ──────────────────────
 # 8. Hermes agent user
@@ -192,7 +176,7 @@ echo "=================================="
 echo ""
 echo "Summary:"
 echo "  Hostname : $NEW_HOSTNAME"
-echo "  Admin    : $ADMIN_USER (existing user, sudo)"
+echo "  Admin    : $ADMIN_USER (pre-existing, sudo)"
 echo "  Agent    : $HERMES_USER (no sudo, key-only)"
 echo ""
 echo "Next steps:"
@@ -200,10 +184,6 @@ echo "  1. Verify SSH access for both users:"
 echo "     ssh $ADMIN_USER@<server-ip>"
 echo "     ssh $HERMES_USER@<server-ip>"
 echo ""
-echo "  2. If SSH keys are missing, add them manually:"
-echo "     ssh-copy-id $ADMIN_USER@<server-ip>"
-echo "     ssh-copy-id $HERMES_USER@<server-ip>"
-echo ""
-echo "  3. Run hardening.sh for security configuration"
+echo "  2. Run hardening.sh for security configuration"
 echo ""
 echo "=================================="
