@@ -5,16 +5,16 @@ Initial system setup for a fresh Debian Server installation.
 ## What it does
 
 | Step | Description |
-||------|-------------|
-|| System update | `apt update && apt upgrade` |
-|| Essential packages | sudo, openssh-server, curl, wget, git, vim, ufw, unattended-upgrades, apt-listchanges, tree, nmap |
-|| Hostname | Set server hostname |
-|| Timezone | Configure timezone interactively |
-|| Locale | Set to `en_US.UTF-8` |
-|| Admin user | Detected via `$SUDO_USER` — pre-existing from Debian install, no changes made |
-|| Hermes user | Creates a dedicated agent user `hermes` (no sudo, key-only) |
-|| Root lock | Locks root account |
-|| SSH drop-in dir | Creates `/etc/ssh/sshd_config.d/` |
+|------|-------------|
+| System update | `apt update && apt upgrade` |
+| Essential packages | sudo, openssh-server, curl, wget, git, vim, ufw, unattended-upgrades, apt-listchanges, tree, nmap |
+| Hostname | Set server hostname |
+| Timezone | Configure timezone interactively |
+| Locale | Set to `en_US.UTF-8` |
+| Admin user | Detected via `$SUDO_USER` — pre-existing from Debian install, no changes made |
+| Hermes user | Creates a dedicated agent user `hermes` (no sudo, key-only) |
+| Root lock | Locks root account |
+| SSH drop-in dir | Creates `/etc/ssh/sshd_config.d/` |
 
 ## Essential packages
 
@@ -31,9 +31,11 @@ These packages are installed during bootstrap. They form the minimal toolset for
 | `unattended-upgrades` | Automatic security updates — configured in hardening |
 | `apt-listchanges` | Shows package changelogs during manual upgrades |
 | `tree` | Visual directory listing |
-| `nmap` | Network scanner — used by `scan-lan.sh` |
+| `nmap` | Network scanner |
 
 ## Usage
+
+### Interactive mode
 
 ```bash
 # Copy script to the server
@@ -45,9 +47,24 @@ chmod +x /home/<user>/bootstrap.sh
 sudo ./bootstrap.sh
 ```
 
-The script is interactive — it will ask for:
+The script will ask for:
 - Hostname
 - SSH public key for hermes user
+
+### Non-interactive mode
+
+```bash
+# Copy script to the server
+scp scripts/bootstrap.sh <user>@<server-ip>:/home/<user>/
+
+# SSH in and run with sudo, passing all options
+ssh <user>@<server-ip>
+chmod +x /home/<user>/bootstrap.sh
+sudo ./bootstrap.sh \
+  --hostname myhost \
+  --timezone America/Sao_Paulo \
+  --ssh-key "$(cat ~/.ssh/id_ed25519.pub)"
+```
 
 The admin user is **detected automatically** via `$SUDO_USER` — the user invoking `sudo`. This is the user already created during Debian OS installation. SSH key for the admin is not configured by this script.
 

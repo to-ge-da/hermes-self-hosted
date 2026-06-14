@@ -28,7 +28,6 @@ Run Hermes Agent 24/7 on dedicated hardware, with a clean, step-by-step document
 │   │   └── hardening-linux-02.sh
 │   ├── bootstrap.sh       # Interactive first-boot setup
 │   └── hardening.sh       # Security hardening (run after bootstrap)
-└── config/                # Hermes configuration files (coming soon)
 ```
 
 ## Installation Order
