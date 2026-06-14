@@ -48,7 +48,7 @@ HERMES reviews the PR
 ## Code Standards
 
 - **Scripts:** `scripts/` directory, `#!/bin/bash`, `set -euo pipefail`
-- **Documentation:** `docs/` directory, Markdown, English
+- **Documentation:** `docs/` directory, Markdown
 - **Conventions:**
   - No hardcoded admin usernames (detect via `$SUDO_USER`)
   - Scripts must handle both interactive and non-interactive modes
@@ -60,7 +60,3 @@ HERMES reviews the PR
 - Test in a VM (VirtualBox) with a fresh Debian install
 - Run the full install flow to verify it completes without errors
 
-## Communication
-
-- Hermes communicates in English (technical docs) or Portuguese (conversation)
-- OpenCode is prompted in English
