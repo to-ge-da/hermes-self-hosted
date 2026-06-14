@@ -1,6 +1,6 @@
 # Hardening
 
-Server security hardening. Run **after** [bootstrap](bootstrap.md).
+Server security hardening. Run **after** [bootstrap](BOOTSTRAP.md).
 
 ## What it does
 
