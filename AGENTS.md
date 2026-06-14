@@ -1,6 +1,6 @@
-# AGENTS.md — Project Workflow Guide
+# hermes-self-hosted — Development Guide
 
-This file guides AI agents (Hermes, OpenCode) on how to work with this repository.
+Guides Hermes and OpenCode on workflow and conventions for this repository.
 
 ## Project Overview
 
