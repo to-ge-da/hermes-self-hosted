@@ -67,4 +67,4 @@ ssh <user>@<server-ip>
 ssh hermes@<server-ip>
 ```
 
-Then proceed to [hardening](hardening.md).
+Then proceed to [hardening](HARDENING.md).

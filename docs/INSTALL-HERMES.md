@@ -4,8 +4,8 @@ Official installation of Hermes Agent on the server.
 
 ## Prerequisites
 
-- [Bootstrap](bootstrap.md) completed (users created, SSH configured)
-- [Hardening](hardening.md) completed (system secured)
+- [Bootstrap](BOOTSTRAP.md) completed (users created, SSH configured)
+- [Hardening](HARDENING.md) completed (system secured)
 - Server has internet access
 
 ## Installation

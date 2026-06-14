@@ -159,5 +159,5 @@ ssh admin@192.168.1.50
 
 ## Related docs
 
-- [Bootstrap](bootstrap.md) — initial system setup
-- [Hardening](hardening.md) — UFW firewall configuration
+- [Bootstrap](BOOTSTRAP.md) — initial system setup
+- [Hardening](HARDENING.md) — UFW firewall configuration
