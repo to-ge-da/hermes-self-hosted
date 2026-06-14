@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# bootstrap.sh — Initial system setup: users, SSH, base configuration
-# Run as root on a fresh Debian Server installation.
+# bootstrap.sh — Initial system setup: SSH, base configuration
+# Run with sudo from the user created during Debian installation.
 #
 # Usage:
 #   chmod +x bootstrap.sh
@@ -84,41 +84,48 @@ else
 fi
 
 # ──────────────────────
-# 6. Admin user
+# 6. Current user (the one running the script via sudo)
 # ──────────────────────
-log "Creating admin user..."
 
-read -rp "Admin username [admin]: " ADMIN_USER
-ADMIN_USER=${ADMIN_USER:-admin}
-
-if id "$ADMIN_USER" &>/dev/null; then
-    warn "User '$ADMIN_USER' already exists, skipping creation."
+# $SUDO_USER is set when the script is invoked with sudo.
+# On a fresh Debian install this is the user created during OS installation,
+# who already has sudo privileges.
+if [[ -n "${SUDO_USER:-}" ]]; then
+    ADMIN_USER="$SUDO_USER"
 else
-    adduser --disabled-password --gecos "Server Administrator" "$ADMIN_USER"
-    usermod -aG sudo "$ADMIN_USER"
-    log "User '$ADMIN_USER' created and added to sudo group."
+    ADMIN_USER="${USER:-$(logname 2>/dev/null || echo 'root')}"
 fi
 
+if [[ "$ADMIN_USER" == "root" ]]; then
+    err "This script must be run with sudo from a non-root user, not directly as root."
+fi
+
+log "Detected admin user: $ADMIN_USER"
+
 # ──────────────────────
-# 7. Admin SSH key
+# 7. Admin SSH key (optional)
 # ──────────────────────
 log "Setting up SSH for $ADMIN_USER..."
 
 mkdir -p "/home/$ADMIN_USER/.ssh"
 chmod 700 "/home/$ADMIN_USER/.ssh"
 
-read -rp "Paste the SSH public key for $ADMIN_USER: " ADMIN_SSH_KEY
-
-if [[ -n "$ADMIN_SSH_KEY" ]]; then
-    echo "$ADMIN_SSH_KEY" > "/home/$ADMIN_USER/.ssh/authorized_keys"
-    chmod 600 "/home/$ADMIN_USER/.ssh/authorized_keys"
-    chown -R "$ADMIN_USER:$ADMIN_USER" "/home/$ADMIN_USER/.ssh"
-    log "SSH key added for $ADMIN_USER."
+if [[ -s "/home/$ADMIN_USER/.ssh/authorized_keys" ]]; then
+    log "SSH key already configured for $ADMIN_USER, skipping."
 else
-    warn "No SSH key provided for $ADMIN_USER. You will need to add one manually."
-    touch "/home/$ADMIN_USER/.ssh/authorized_keys"
-    chmod 600 "/home/$ADMIN_USER/.ssh/authorized_keys"
-    chown -R "$ADMIN_USER:$ADMIN_USER" "/home/$ADMIN_USER/.ssh"
+    read -rp "Paste the SSH public key for $ADMIN_USER (or press Enter to skip): " ADMIN_SSH_KEY
+
+    if [[ -n "$ADMIN_SSH_KEY" ]]; then
+        echo "$ADMIN_SSH_KEY" > "/home/$ADMIN_USER/.ssh/authorized_keys"
+        chmod 600 "/home/$ADMIN_USER/.ssh/authorized_keys"
+        chown -R "$ADMIN_USER:$ADMIN_USER" "/home/$ADMIN_USER/.ssh"
+        log "SSH key added for $ADMIN_USER."
+    else
+        warn "No SSH key provided for $ADMIN_USER. You will need to add one manually."
+        touch "/home/$ADMIN_USER/.ssh/authorized_keys"
+        chmod 600 "/home/$ADMIN_USER/.ssh/authorized_keys"
+        chown -R "$ADMIN_USER:$ADMIN_USER" "/home/$ADMIN_USER/.ssh"
+    fi
 fi
 
 # ──────────────────────
@@ -159,20 +166,7 @@ else
 fi
 
 # ──────────────────────
-# 10. Sudoers — passwordless sudo for admin
-# ──────────────────────
-log "Configuring sudoers..."
-
-SUDOERS_FILE="/etc/sudoers.d/10-admin"
-cat > "$SUDOERS_FILE" << EOF
-# Allow admin user to run sudo without password
-$ADMIN_USER ALL=(ALL) NOPASSWD:ALL
-EOF
-chmod 440 "$SUDOERS_FILE"
-log "Passwordless sudo configured for $ADMIN_USER."
-
-# ──────────────────────
-# 11. SSH directory for sshd_config.d
+# 10. SSH directory for sshd_config.d
 # ──────────────────────
 if [[ ! -d /etc/ssh/sshd_config.d ]]; then
     mkdir -p /etc/ssh/sshd_config.d
@@ -180,7 +174,7 @@ if [[ ! -d /etc/ssh/sshd_config.d ]]; then
 fi
 
 # ──────────────────────
-# 12. Lock root account
+# 11. Lock root account
 # ──────────────────────
 log "Locking root account..."
 passwd -l root
@@ -196,7 +190,7 @@ echo "=================================="
 echo ""
 echo "Summary:"
 echo "  Hostname : $NEW_HOSTNAME"
-echo "  Admin    : $ADMIN_USER (sudo, passwordless)"
+echo "  Admin    : $ADMIN_USER (existing user, sudo)"
 echo "  Agent    : $HERMES_USER (no sudo, key-only)"
 echo ""
 echo "Next steps:"
