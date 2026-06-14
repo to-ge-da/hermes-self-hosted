@@ -59,7 +59,3 @@ graph LR
 List files that will likely be modified.
 -->
 - `path/to/file.sh`
-
----
-
-/lifecycle
