@@ -3,14 +3,23 @@
 # bootstrap.sh — Initial system setup: creates hermes user, base configuration
 # Run as root on a fresh Debian Server installation.
 #
+# Usage:
+#   sudo ./bootstrap.sh                      # interactive mode
+#   sudo ./bootstrap.sh --hostname myhost     # non-interactive hostname
+#   sudo ./bootstrap.sh --timezone UTC        # non-interactive timezone
+#   sudo ./bootstrap.sh --ssh-key "$(cat ~/.ssh/id_ed25519.pub)"
+#   sudo ./bootstrap.sh --hostname myhost --timezone America/Sao_Paulo --ssh-key "ssh-ed25519 AAA..."
+#
 # Pre-condition: the admin user already exists (created during Debian OS
 # installation). This script does NOT create the admin user — only hermes.
 #
-# Usage:
-#   chmod +x bootstrap.sh
-#   sudo ./bootstrap.sh
 
 set -euo pipefail
+
+# ──────────────────────
+# Defaults
+# ──────────────────────
+DEFAULT_TIMEZONE="UTC"
 
 # ──────────────────────
 # Helpers
@@ -18,28 +27,104 @@ set -euo pipefail
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 log()  { echo -e "${GREEN}[BOOTSTRAP]${NC} $1"; }
 warn() { echo -e "${YELLOW}[BOOTSTRAP]${NC} $1"; }
 err()  { echo -e "${RED}[BOOTSTRAP]${NC} $1" >&2; exit 1; }
 
+usage() {
+    cat <<EOF
+Usage: $0 [options]
+
+Options:
+  --hostname NAME     Set hostname (non-interactive)
+  --timezone ZONE     Set timezone (non-interactive, default: UTC)
+  --ssh-key KEY       SSH public key for hermes user (run interactively if omitted)
+  -h, --help          Show this help message
+
+Examples:
+  sudo ./bootstrap.sh --hostname hermes-server --timezone America/Sao_Paulo
+  sudo ./bootstrap.sh --ssh-key "ssh-ed25519 AAAAC3..."
+EOF
+    exit 0
+}
+
+# ──────────────────────
+# Parse arguments
+# ──────────────────────
+HOSTNAME_ARG=""
+TIMEZONE_ARG=""
+SSH_KEY_ARG=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --hostname)
+            HOSTNAME_ARG="$2"
+            shift 2
+            ;;
+        --hostname=*)
+            HOSTNAME_ARG="${1#*=}"
+            shift
+            ;;
+        --timezone)
+            TIMEZONE_ARG="$2"
+            shift 2
+            ;;
+        --timezone=*)
+            TIMEZONE_ARG="${1#*=}"
+            shift
+            ;;
+        --ssh-key)
+            SSH_KEY_ARG="$2"
+            shift 2
+            ;;
+        --ssh-key=*)
+            SSH_KEY_ARG="${1#*=}"
+            shift
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            err "Unknown option: $1. Use --help for usage."
+            ;;
+    esac
+done
+
 # ──────────────────────
 # Pre-flight
 # ──────────────────────
 if [[ $EUID -ne 0 ]]; then
-    err "This script must be run as root."
+    err "This script must be run as root (use sudo)."
 fi
 
 # ──────────────────────
-# 1. System update
+# 1. Fix /etc/hosts (avoid sudo: unable to resolve host)
+# ──────────────────────
+# Common issue on fresh VMs: the hostname is not in /etc/hosts,
+# causing sudo to emit a warning on every invocation.
+CURRENT_HOSTNAME=$(hostname)
+if ! grep -qi "$CURRENT_HOSTNAME" /etc/hosts 2>/dev/null; then
+    log "Fixing /etc/hosts: adding $CURRENT_HOSTNAME"
+    if grep -q '^127\.0\.1\.1' /etc/hosts; then
+        # Replace the line that usually holds the hostname
+        sed -i "s/^127\.0\.1\.1.*/127.0.1.1\t$CURRENT_HOSTNAME/" /etc/hosts
+    else
+        echo "127.0.1.1\t$CURRENT_HOSTNAME" >> /etc/hosts
+    fi
+    log "/etc/hosts updated — sudo hostname warnings will be resolved."
+fi
+
+# ──────────────────────
+# 2. System update
 # ──────────────────────
 log "Updating system packages..."
 apt update && apt upgrade -y
 apt autoremove -y
 
 # ──────────────────────
-# 2. Essential packages
+# 3. Essential packages
 # ──────────────────────
 log "Installing essential packages..."
 apt install -y \
@@ -52,35 +137,56 @@ apt install -y \
     ufw \
     unattended-upgrades \
     apt-listchanges \
-    tree \
-    nmap
+    tree
 
 # ──────────────────────
-# 3. Hostname
+# 4. Hostname
 # ──────────────────────
-CURRENT_HOSTNAME=$(hostname)
-read -rp "Enter hostname [${CURRENT_HOSTNAME}]: " NEW_HOSTNAME
-NEW_HOSTNAME=${NEW_HOSTNAME:-$CURRENT_HOSTNAME}
-
-if [[ "$NEW_HOSTNAME" != "$CURRENT_HOSTNAME" ]]; then
-    hostnamectl set-hostname "$NEW_HOSTNAME"
-    log "Hostname set to: $NEW_HOSTNAME"
+if [[ -n "$HOSTNAME_ARG" ]]; then
+    log "Setting hostname (non-interactive): $HOSTNAME_ARG"
+    hostnamectl set-hostname "$HOSTNAME_ARG"
+    # Re-run /etc/hosts fix with the new hostname
+    CURRENT_HOSTNAME="$HOSTNAME_ARG"
+    if grep -q '^127\.0\.1\.1' /etc/hosts; then
+        sed -i "s/^127\.0\.1\.1.*/127.0.1.1\t$CURRENT_HOSTNAME/" /etc/hosts
+    else
+        echo "127.0.1.1\t$CURRENT_HOSTNAME" >> /etc/hosts
+    fi
+    NEW_HOSTNAME="$HOSTNAME_ARG"
+elif [[ -t 0 ]]; then
+    # Interactive mode — only prompt if stdin is a terminal
+    CURRENT_HOSTNAME=$(hostname)
+    read -rp "Enter hostname [${CURRENT_HOSTNAME}]: " NEW_HOSTNAME
+    NEW_HOSTNAME=${NEW_HOSTNAME:-$CURRENT_HOSTNAME}
+    if [[ "$NEW_HOSTNAME" != "$CURRENT_HOSTNAME" ]]; then
+        hostnamectl set-hostname "$NEW_HOSTNAME"
+        log "Hostname set to: $NEW_HOSTNAME"
+    else
+        log "Hostname unchanged: $CURRENT_HOSTNAME"
+    fi
 else
-    log "Hostname unchanged: $CURRENT_HOSTNAME"
+    log "Non-interactive mode, hostname unchanged: $(hostname)"
+    NEW_HOSTNAME="$(hostname)"
 fi
 
 # ──────────────────────
-# 4. Timezone
+# 5. Timezone (non-interactive)
 # ──────────────────────
-log "Configuring timezone..."
-dpkg-reconfigure tzdata || true
-log "Timezone set."
+TZ="${TIMEZONE_ARG:-$DEFAULT_TIMEZONE}"
+log "Setting timezone: $TZ"
+export DEBIAN_FRONTEND=noninteractive
+timedatectl set-timezone "$TZ" 2>/dev/null || {
+    # Fallback for systems without timedatectl
+    ln -sf "/usr/share/zoneinfo/$TZ" /etc/localtime
+    echo "$TZ" > /etc/timezone
+}
+log "Timezone set to $TZ (non-interactive)."
 
 # ──────────────────────
-# 5. Locale
+# 6. Locale
 # ──────────────────────
 log "Configuring locale..."
-if ! locale -a | grep -q 'en_US.utf8'; then
+if ! locale -a 2>/dev/null | grep -qi 'en_US.utf8'; then
     locale-gen en_US.UTF-8
     update-locale LANG=en_US.UTF-8
     log "Locale set to en_US.UTF-8"
@@ -89,12 +195,8 @@ else
 fi
 
 # ──────────────────────
-# 6. Current user (the one running the script via sudo)
+# 7. Current user (the one running the script via sudo)
 # ──────────────────────
-
-# $SUDO_USER is set when the script is invoked with sudo.
-# On a fresh Debian install this is the user created during OS installation,
-# who already has sudo privileges.
 if [[ -n "${SUDO_USER:-}" ]]; then
     ADMIN_USER="$SUDO_USER"
 else
@@ -106,12 +208,6 @@ if [[ "$ADMIN_USER" == "root" ]]; then
 fi
 
 log "Detected admin user: $ADMIN_USER"
-
-# ──────────────────────
-# 7. Log current user
-# ──────────────────────
-# The admin user already exists — created during Debian installation.
-# This script does not create or configure the admin user.
 log "Admin user: $ADMIN_USER (pre-existing from Debian installation)"
 
 # ──────────────────────
@@ -137,15 +233,47 @@ log "Setting up SSH for $HERMES_USER..."
 mkdir -p "/home/$HERMES_USER/.ssh"
 chmod 700 "/home/$HERMES_USER/.ssh"
 
-read -rp "Paste the SSH public key for $HERMES_USER: " HERMES_SSH_KEY
-
-if [[ -n "$HERMES_SSH_KEY" ]]; then
-    echo "$HERMES_SSH_KEY" > "/home/$HERMES_USER/.ssh/authorized_keys"
+if [[ -n "$SSH_KEY_ARG" ]]; then
+    # Non-interactive: key passed as argument
+    echo "$SSH_KEY_ARG" > "/home/$HERMES_USER/.ssh/authorized_keys"
     chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
     chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
-    log "SSH key added for $HERMES_USER."
+    log "SSH key added for $HERMES_USER (from --ssh-key argument)."
+elif [[ -t 0 ]]; then
+    # Interactive mode
+    echo ""
+    echo "┌────────────────────────────────────────────────────────────┐"
+    echo "│ SSH KEY SETUP                                              │"
+    echo "│                                                            │"
+    echo "│ Paste the PUBLIC KEY from your LOCAL machine below.        │"
+    echo "│                                                            │"
+    echo "│ If you don't have one, generate it on your local PC:       │"
+    echo "│   ssh-keygen -t ed25519 -C \"your-email@example.com\"        │"
+    echo "│                                                            │"
+    echo "│ Then copy the content of ~/.ssh/id_ed25519.pub             │"
+    echo "│ (or ~/.ssh/id_rsa.pub)                                     │"
+    echo "│                                                            │"
+    echo "│ Paste it below and press Ctrl+D when done:                 │"
+    echo "└────────────────────────────────────────────────────────────┘"
+    echo ""
+    echo -n "SSH public key: "
+    read -r HERMES_SSH_KEY
+
+    if [[ -n "$HERMES_SSH_KEY" ]]; then
+        echo "$HERMES_SSH_KEY" > "/home/$HERMES_USER/.ssh/authorized_keys"
+        chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
+        chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
+        log "SSH key added for $HERMES_USER."
+    else
+        warn "No SSH key provided for $HERMES_USER. You will need to add one manually."
+        touch "/home/$HERMES_USER/.ssh/authorized_keys"
+        chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
+        chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
+    fi
 else
-    warn "No SSH key provided for $HERMES_USER. You will need to add one manually."
+    warn "Non-interactive mode and no --ssh-key provided. Skipping SSH key setup."
+    warn "Add SSH key manually later:"
+    warn "  echo 'ssh-ed25519 AAAA...' | sudo tee /home/$HERMES_USER/.ssh/authorized_keys"
     touch "/home/$HERMES_USER/.ssh/authorized_keys"
     chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
     chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
@@ -176,6 +304,7 @@ echo "=================================="
 echo ""
 echo "Summary:"
 echo "  Hostname : $NEW_HOSTNAME"
+echo "  Timezone : $TZ"
 echo "  Admin    : $ADMIN_USER (pre-existing, sudo)"
 echo "  Agent    : $HERMES_USER (no sudo, key-only)"
 echo ""
@@ -184,6 +313,7 @@ echo "  1. Verify SSH access for both users:"
 echo "     ssh $ADMIN_USER@<server-ip>"
 echo "     ssh $HERMES_USER@<server-ip>"
 echo ""
-echo "  2. Run hardening.sh for security configuration"
+echo "  2. Run hardening.sh for security configuration:"
+echo "     sudo ./hardening.sh"
 echo ""
 echo "=================================="
