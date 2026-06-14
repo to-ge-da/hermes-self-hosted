@@ -36,8 +36,8 @@ HERMES reviews the PR
 ## Git Conventions
 
 - **Account:** `to-ge-da` (not personal account)
-- **Auth:** `gh` CLI via `mise exec gh -- gh ...`
-- **Clone:** `mise exec gh -- gh repo clone to-ge-da/hermes-self-hosted`
+- **Auth:** `gh` CLI (available on PATH via `mise activate`)
+- **Clone:** `gh repo clone to-ge-da/hermes-self-hosted`
 - **Branch from:** `main` (always update local main first)
 - **Branch naming:** `feat/short-description`, `fix/short-description`, or `chore/short-description`
 - **NEVER commit or push to main**
