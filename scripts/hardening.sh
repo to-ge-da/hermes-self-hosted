@@ -35,6 +35,38 @@ log()  { echo -e "${GREEN}[HARDENING]${NC} $1"; }
 warn() { echo -e "${YELLOW}[HARDENING]${NC} $1"; }
 err()  { echo -e "${RED}[HARDENING]${NC} $1" >&2; exit 1; }
 
+usage() {
+    cat <<EOF
+Usage: $0 [options]
+
+Hardening script for Hermes Agent on Debian servers.
+Run this AFTER bootstrap.sh on a fresh Debian install.
+
+Options:
+  -h, --help          Show this help message
+
+Must be run as root (sudo).
+
+Examples:
+  sudo ./hardening.sh
+EOF
+    exit 0
+}
+
+# ──────────────────────
+# Parse arguments
+# ──────────────────────
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            usage
+            ;;
+        *)
+            err "Unknown option: $1. Use --help for usage."
+            ;;
+    esac
+done
+
 # ──────────────────────
 # Pre-flight
 # ──────────────────────
