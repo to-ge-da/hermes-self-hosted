@@ -48,7 +48,9 @@ apt install -y \
     vim \
     ufw \
     unattended-upgrades \
-    apt-listchanges
+    apt-listchanges \
+    tree \
+    nmap
 
 # ──────────────────────
 # 3. Hostname
