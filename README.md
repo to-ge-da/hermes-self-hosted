@@ -22,13 +22,15 @@ Run Hermes Agent 24/7 on dedicated hardware, with a clean, step-by-step document
 │   ├── HARDENING.md       # Server security hardening
 │   ├── NETWORK.md         # Static IP and DNS configuration
 │   ├── INSTALL-HERMES.md  # Hermes Agent installation guide
+│   ├── MISE-SYSTEM-WIDE.md# System-wide mise activation
 │   └── GITHUB_TEMPLATES.md# GitHub templates documentation
 ├── scripts/
 │   ├── examples/          # Original legacy scripts (reference)
 │   │   ├── hardening-linux-01.sh
 │   │   └── hardening-linux-02.sh
 │   ├── bootstrap.sh       # Interactive first-boot setup
-│   └── hardening.sh       # Security hardening (run after bootstrap)
+│   ├── hardening.sh       # Security hardening (run after bootstrap)
+│   └── install-mise-system-wide.sh  # System-wide mise activation
 ├── .github/
 │   ├── PULL_REQUEST_TEMPLATE.md   # PR template with checklist
 │   └── ISSUE_TEMPLATE/
@@ -43,6 +45,7 @@ Run Hermes Agent 24/7 on dedicated hardware, with a clean, step-by-step document
 2. **[hardening.sh](scripts/hardening.sh)** — Firewall, kernel, auditd, file permissions
 3. **[NETWORK.md](docs/NETWORK.md)** — Configure static IP and DNS
 4. **[INSTALL-HERMES.md](docs/INSTALL-HERMES.md)** — Install Hermes Agent and gateway
+5. **[MISE-SYSTEM-WIDE.md](docs/MISE-SYSTEM-WIDE.md)** — System-wide mise activation (optional)
 
 ## Contributing
 
