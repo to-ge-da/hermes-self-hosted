@@ -15,11 +15,13 @@
 #
 
 set -euo pipefail
+SECONDS=0
 
 # ──────────────────────
 # Defaults
 # ──────────────────────
 DEFAULT_TIMEZONE="UTC"
+SCRIPT_VERSION="1.0.0"
 
 # ──────────────────────
 # Helpers
@@ -27,7 +29,31 @@ DEFAULT_TIMEZONE="UTC"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
 NC='\033[0m'
+
+show_banner() {
+    local term_width
+    term_width=$(tput cols 2>/dev/null || echo 0)
+    local width=50
+    if [[ $term_width -lt $width ]] || [[ $term_width -gt 200 ]]; then
+        width=$term_width
+    fi
+    local inner=$((width - 4))
+    local half=$((inner / 2))
+    local pad_total=$((half - 12))
+    local pad1=$((pad_total > 0 ? pad_total : 0))
+
+    printf '\n'
+    printf '%s╔%s╗\n' "$GREEN" "$(printf '═%.0s' $(seq 1 $inner))"
+    printf '%s║%s╗\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $inner))"
+    printf '%s║%shermes-self-hosted%s║\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $pad1))" "$(printf ' %.0s' $(seq 1 $pad1))"
+    printf '%s║%sBootstrap Script v%s%s%s║\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $pad1))" "$CYAN" "$SCRIPT_VERSION" "$(printf ' %.0s' $(seq 1 $((inner - pad1 * 2 - 20))))"
+    printf '%s║%s║\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $inner))"
+    printf '%s╚%s╝\n' "$GREEN" "$(printf '═%.0s' $(seq 1 $inner))"
+    printf '\n'
+}
 
 log()  { echo -e "${GREEN}[BOOTSTRAP]${NC} $1"; }
 warn() { echo -e "${YELLOW}[BOOTSTRAP]${NC} $1"; }
@@ -99,6 +125,8 @@ if [[ $EUID -ne 0 ]]; then
     err "This script must be run as root (use sudo)."
 fi
 
+show_banner
+
 # ──────────────────────
 # 1. Fix /etc/hosts (avoid sudo: unable to resolve host)
 # ──────────────────────
@@ -111,7 +139,7 @@ if ! grep -qi "$CURRENT_HOSTNAME" /etc/hosts 2>/dev/null; then
         # Replace the line that usually holds the hostname
         sed -i "s/^127\.0\.1\.1.*/127.0.1.1\t$CURRENT_HOSTNAME/" /etc/hosts
     else
-        echo "127.0.1.1\t$CURRENT_HOSTNAME" >> /etc/hosts
+        printf '127.0.1.1\t%s\n' "$CURRENT_HOSTNAME" >> /etc/hosts
     fi
     log "/etc/hosts updated — sudo hostname warnings will be resolved."
 fi
@@ -151,7 +179,7 @@ if [[ -n "$HOSTNAME_ARG" ]]; then
     if grep -q '^127\.0\.1\.1' /etc/hosts; then
         sed -i "s/^127\.0\.1\.1.*/127.0.1.1\t$CURRENT_HOSTNAME/" /etc/hosts
     else
-        echo "127.0.1.1\t$CURRENT_HOSTNAME" >> /etc/hosts
+        printf '127.0.1.1\t%s\n' "$CURRENT_HOSTNAME" >> /etc/hosts
     fi
     NEW_HOSTNAME="$HOSTNAME_ARG"
 elif [[ -t 0 ]]; then
@@ -298,23 +326,33 @@ log "Root account locked."
 # ──────────────────────
 # Done
 # ──────────────────────
+duration=$SECONDS
+mins=$((duration / 60))
+secs=$((duration % 60))
+if [[ $mins -gt 0 ]]; then
+    elapsed="${mins}m ${secs}s"
+else
+    elapsed="${secs}s"
+fi
+
 echo ""
-echo "=================================="
-echo "  BOOTSTRAP COMPLETE"
-echo "=================================="
+echo -e "${GREEN}╔══════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║          ✓ BOOTSTRAP COMPLETE            ║${NC}"
+echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
 echo ""
-echo "Summary:"
-echo "  Hostname : $NEW_HOSTNAME"
-echo "  Timezone : $TZ"
-echo "  Admin    : $ADMIN_USER (pre-existing, sudo)"
-echo "  Agent    : $HERMES_USER (no sudo, key-only)"
+echo -e "  ${BOLD}Duration${NC}  : ${CYAN}${elapsed}${NC}"
+echo -e "  ${BOLD}Hostname${NC}  : ${CYAN}${NEW_HOSTNAME}${NC}"
+echo -e "  ${BOLD}Timezone${NC} : ${CYAN}${TZ}${NC}"
 echo ""
-echo "Next steps:"
-echo "  1. Verify SSH access for both users:"
-echo "     ssh $ADMIN_USER@<server-ip>"
-echo "     ssh $HERMES_USER@<server-ip>"
+echo -e "  ${BOLD}Admin${NC}  : ${GREEN}${ADMIN_USER}${NC} (pre-existing, sudo)"
+echo -e "  ${BOLD}Agent${NC}  : ${GREEN}${HERMES_USER}${NC} (no sudo, key-only)"
 echo ""
-echo "  2. Run hardening.sh for security configuration:"
-echo "     sudo ./hardening.sh"
+echo -e "${YELLOW}Next steps:${NC}"
+echo -e "  ${CYAN}1.${NC} Verify SSH access for both users:"
+echo "       ${BOLD}ssh ${ADMIN_USER}@<server-ip>${NC}"
+echo "       ${BOLD}ssh ${HERMES_USER}@<server-ip>${NC}"
 echo ""
-echo "=================================="
+echo -e "  ${CYAN}2.${NC} Run hardening.sh for security configuration:"
+echo "       ${BOLD}sudo ./hardening.sh${NC}"
+echo ""
+echo -e "${GREEN}══════════════════════════════════════════════${NC}"
