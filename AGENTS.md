@@ -4,9 +4,8 @@ Guides Hermes and OpenCode on workflow and conventions for this repository.
 
 ## Project Overview
 
-**Repo:** `to-ge-da/hermes-self-hosted`  
-**Purpose:** Deploy Hermes Agent on a Debian server (bare-metal, VM, or VPS).  
-**Stack:** Bash scripts + Hermes Agent (Python/Node.js via Hermes' own installer).
+**Repo:** `to-ge-da/hermes-self-hosted` — Deploy Hermes Agent on Debian.  
+**Stack:** Bash scripts + Hermes Agent (via official installer).
 
 ## Team Roles
 
@@ -15,16 +14,14 @@ Guides Hermes and OpenCode on workflow and conventions for this repository.
 | **Architect / Coordinator** | Hermes | Design, planning, issue creation, code review, PR management |
 | **Executor** | OpenCode CLI | Local coding, testing, pushing code |
 
-## Labels Convention
+## Labels
 
-| Label | Assigner | Purpose |
-|---|---|---|
-| `hermes` | Hermes | Issues that Hermes coordinates — planning, design decisions, review |
-| `opencode` | Hermes or OpenCode | Issues/PRs that OpenCode executes — coding, testing, pushing |
+| Label | Purpose |
+|---|---|
+| `hermes` | Architect/coordinator work — planning, design, review |
+| `opencode` | Executor work — coding, testing, PRs |
 
-- Every issue created by Hermes gets the `hermes` label
-- When a PR is ready for review, the `opencode` label can be applied if tracking executor work
-- Issue type labels (`bug`, `enhancement`, `documentation`) follow GitHub defaults
+Issue type labels (`bug`, `enhancement`, `documentation`) coexist with team labels.
 
 ## Workflow (Issue → Code → PR)
 
@@ -46,24 +43,17 @@ HERMES reviews the PR
 
 ## Git Conventions
 
-- **Account:** `to-ge-da` (not personal account)
+- **Account:** `to-ge-da` (not personal) — **NEVER commit or push to main**
 - **Auth:** `gh` CLI (available on PATH via `mise activate`)
-- **Clone:** `gh repo clone to-ge-da/hermes-self-hosted`
-- **Branch from:** `main` (always update local main first)
-- **Branch naming:** `feat/short-description`, `fix/short-description`, or `chore/short-description`
-- **NEVER commit or push to main**
+- **Branch:** `feat/`, `fix/`, or `chore/` prefix; branch from `main` (update first)
 - **Commit messages:** Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, etc.)
 - **PRs:** Squash merge, delete branch after merge
-- **Updating this file:** AGENTS.md is a living document — update it whenever a workflow or convention change is agreed upon during PR review
 
 ## Code Standards
 
-- **Scripts:** `scripts/` directory, `#!/bin/bash`, `set -euo pipefail`
+- **Scripts:** `scripts/`, `#!/bin/bash`, `set -euo pipefail`, `--help` flag, interactive + non-interactive modes
 - **Documentation:** `docs/` directory, Markdown
-- **Conventions:**
-  - No hardcoded admin usernames (detect via `$SUDO_USER`)
-  - Scripts must handle both interactive and non-interactive modes
-  - Add `--help` flag to all scripts
+- No hardcoded admin usernames (use `$SUDO_USER`)
 
 ## Testing
 
@@ -73,57 +63,18 @@ HERMES reviews the PR
 
 ## Issue Type Guidance
 
-| Template | When to use |
-|---|---|
-| `task.md` | General work item — feature, fix, improvement, or chore with clear scope |
-| `feature.md` | New capability or enhancement that needs problem/solution/alternatives breakdown |
-| `bug.md` | Unexpected behavior or regression with reproduction steps |
-
-- **Task** is the default — use it unless the work benefits from the structured sections of `feature.md` or `bug.md`
-- Research issues (like #25) start as `task.md` and may spawn implementation issues
+- **Task** (`task.md`) — default for any work with clear scope
+- **Feature** (`feature.md`) — new capability needing problem/solution/alternatives breakdown
+- **Bug** (`bug.md`) — unexpected behavior with reproduction steps
 
 ## Issue Lifecycle
 
-```
-Research Issue → Discussion / Decision → Implementation Issue → PR → Merge
-```
-
-Some issues flow through multiple stages:
-1. **Research** — Investigate options, document findings (e.g., #25: sudo requirements research)
-2. **Discussion** — Decide on approach based on research output
-3. **Implementation** — Code the agreed solution (e.g., #23: sudoers policy implementation, depends on #25)
-4. **Review & Merge** — Standard PR workflow
-
+Research → Discussion → Implementation → PR → Review → Merge.
 Not every issue needs all stages — simple tasks go straight to implementation.
 
 ## Project Phases
 
-| Phase | Script | Description |
-|---|---|---|
-| **Bootstrap** | `scripts/bootstrap.sh` | Initial server setup — packages, users, SSH, firewall |
-| **Hardening** | `scripts/hardening.sh` | Security hardening — root lock, auditd, sysctl |
-| **Install Hermes** | `scripts/install-hermes.sh` | Install and configure the Hermes Agent |
-| **Profiles** | `scripts/profiles/` | Optional feature profiles (dev, monitoring, etc.) |
+Bootstrap (`bootstrap.sh`) → Hardening (`hardening.sh`) → Hermes install (official installer) → Profiles (TBD).
 
-## GH CLI Quick Reference
 
-```bash
-# Clone the repo
-gh repo clone to-ge-da/hermes-self-hosted
-
-# View an issue
-gh issue view <number>
-
-# Create a PR
-gh pr create --base main --title "type: description" --body "Summary of changes"
-
-# List open issues
-gh issue list --state open
-
-# List open PRs
-gh pr list --state open
-
-# Check out a PR locally
-gh pr checkout <number>
-```
 
