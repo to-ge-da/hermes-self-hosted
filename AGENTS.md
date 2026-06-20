@@ -43,17 +43,16 @@ HERMES reviews the PR
 
 ## Git Conventions
 
-- **Account:** `to-ge-da` (not personal) — **NEVER commit or push to main**
-- **Auth:** `gh` CLI (available on PATH via `mise activate`)
-- **Branch:** `feat/`, `fix/`, or `chore/` prefix; branch from `main` (update first)
-- **Commit messages:** Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, etc.)
-- **PRs:** Squash merge, delete branch after merge
+- Use `gh` CLI for all GitHub operations (issues, PRs, merge)
+- Branch from `main`: `feat/`, `fix/`, or `chore/` prefix
+- Conventional Commits (`feat:`, `fix:`, `docs:`, etc.)
+- Squash merge, delete branch after merge
+- **NEVER commit or push to main**
 
 ## Code Standards
 
 - **Scripts:** `scripts/`, `#!/bin/bash`, `set -euo pipefail`, `--help` flag, interactive + non-interactive modes
 - **Documentation:** `docs/` directory, Markdown
-- No hardcoded admin usernames (use `$SUDO_USER`)
 
 ## Testing
 
