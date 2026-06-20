@@ -39,6 +39,7 @@ Fixes #
 - [ ] Scripts include `--help` flag
 - [ ] Scripts handle both interactive and non-interactive modes
 - [ ] Documentation updated (if applicable)
+- [ ] Labels applied (`hermes` for review, `opencode` for executor tracking)
 
 ## Review Notes
 

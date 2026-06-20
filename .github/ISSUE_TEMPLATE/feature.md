@@ -2,7 +2,7 @@
 name: Feature Request
 about: Suggest a new feature or enhancement
 title: "feat: description of the feature"
-labels: ["enhancement"]
+labels: ["enhancement", "hermes"]
 assignees: []
 ---
 
@@ -36,6 +36,17 @@ assignees: []
 - [ ] Criterion1
 - [ ] Criterion2
 - [ ] Criterion3
+
+## Lifecycle
+
+```
+Research (if needed) → Discussion → Implementation Issue → PR → Merge
+```
+
+1. **Research** — Investigate options, document findings (if approach is unclear)
+2. **Discussion** — Decide on approach based on research output
+3. **Implementation** — Code the agreed solution
+4. **Review & Merge** — Standard PR workflow
 
 ## Files Likely Affected
 

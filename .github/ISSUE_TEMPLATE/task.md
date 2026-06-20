@@ -2,7 +2,7 @@
 name: Task
 about: Describe a piece of work to be done — feature, fix, or improvement
 title: "scope: short description (e.g. scripts: add --dry-run flag to bootstrap)"
-labels: []
+labels: ["hermes"]
 assignees: []
 ---
 
