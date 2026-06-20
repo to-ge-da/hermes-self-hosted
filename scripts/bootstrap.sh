@@ -47,7 +47,7 @@ show_banner() {
 
     printf '\n'
     printf '%s╔%s╗\n' "$GREEN" "$(printf '═%.0s' $(seq 1 $inner))"
-    printf '%s║%s╗\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $inner))"
+    printf '%s║%s║\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $inner))"
     printf '%s║%shermes-self-hosted%s║\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $pad1))" "$(printf ' %.0s' $(seq 1 $pad1))"
     printf '%s║%sBootstrap Script v%s%s%s║\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $pad1))" "$CYAN" "$SCRIPT_VERSION" "$(printf ' %.0s' $(seq 1 $((inner - pad1 * 2 - 20))))"
     printf '%s║%s║\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $inner))"
