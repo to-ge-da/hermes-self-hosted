@@ -2,7 +2,7 @@
 name: Bug Report
 about: Report a problem or unexpected behavior
 title: "fix: description of the bug"
-labels: ["bug"]
+labels: ["hermes"]
 assignees: []
 ---
 
@@ -48,3 +48,19 @@ assignees: []
 - [ ] Root cause is identified
 - [ ] Fix is implemented and tested
 - [ ] Regression test added (if applicable)
+
+## Lifecycle
+
+```
+Issue Created → Branch: fix/...
+       ↓
+    Code & Test
+       ↓
+  Commit & Push
+       ↓
+    Open PR
+       ↓
+  Hermes Reviews
+       ↓
+PR Merged → Branch Deleted
+```
