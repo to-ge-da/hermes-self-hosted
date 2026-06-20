@@ -2,7 +2,7 @@
 name: Feature Request
 about: Suggest a new feature or enhancement
 title: "feat: description of the feature"
-labels: ["hermes"]
+labels: ["enhancement", "hermes"]
 assignees: []
 ---
 

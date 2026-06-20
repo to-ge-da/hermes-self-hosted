@@ -2,7 +2,7 @@
 name: Bug Report
 about: Report a problem or unexpected behavior
 title: "fix: description of the bug"
-labels: ["hermes"]
+labels: ["bug", "hermes"]
 assignees: []
 ---
 
