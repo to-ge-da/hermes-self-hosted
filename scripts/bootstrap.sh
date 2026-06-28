@@ -24,6 +24,36 @@ DEFAULT_TIMEZONE="UTC"
 SCRIPT_VERSION="1.0.0"
 
 # ──────────────────────
+# State
+# ──────────────────────
+STATE_DIR="/var/lib/hermes-self-hosted"
+STATE_FILE="${STATE_DIR}/bootstrap.state"
+BOOTSTRAP_RERUN=false
+
+load_bootstrap_state() {
+    if [[ -f "$STATE_FILE" ]]; then
+        BOOTSTRAP_RERUN=true
+        log "Previous bootstrap detected ($STATE_FILE), running in re-run mode."
+    elif id hermes &>/dev/null; then
+        BOOTSTRAP_RERUN=true
+        log "Legacy bootstrap detected (hermes user exists), running in re-run mode."
+    fi
+}
+
+write_bootstrap_state() {
+    mkdir -p "$STATE_DIR"
+    cat > "$STATE_FILE" <<EOF
+COMPLETED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+SCRIPT_VERSION=${SCRIPT_VERSION}
+HOSTNAME=${NEW_HOSTNAME}
+ADMIN_USER=${ADMIN_USER}
+HERMES_USER=${HERMES_USER}
+EOF
+    chmod 644 "$STATE_FILE"
+    log "Bootstrap state written to $STATE_FILE."
+}
+
+# ──────────────────────
 # Helpers
 # ──────────────────────
 RED='\033[0;31m'
@@ -127,6 +157,8 @@ fi
 
 show_banner
 
+load_bootstrap_state
+
 # ──────────────────────
 # 1. Fix /etc/hosts (avoid sudo: unable to resolve host)
 # ──────────────────────
@@ -195,13 +227,18 @@ if [[ -n "$HOSTNAME_ARG" ]]; then
 elif [[ -t 0 ]]; then
     # Interactive mode — only prompt if stdin is a terminal
     CURRENT_HOSTNAME=$(hostname)
-    read -rp "Enter hostname [${CURRENT_HOSTNAME}]: " NEW_HOSTNAME
-    NEW_HOSTNAME=${NEW_HOSTNAME:-$CURRENT_HOSTNAME}
-    if [[ "$NEW_HOSTNAME" != "$CURRENT_HOSTNAME" ]]; then
-        hostnamectl set-hostname "$NEW_HOSTNAME"
-        log "Hostname set to: $NEW_HOSTNAME"
+    if [[ "$BOOTSTRAP_RERUN" == true ]]; then
+        log "Hostname unchanged: $CURRENT_HOSTNAME (re-run, skipping prompt)"
+        NEW_HOSTNAME="$CURRENT_HOSTNAME"
     else
-        log "Hostname unchanged: $CURRENT_HOSTNAME"
+        read -rp "Enter hostname [${CURRENT_HOSTNAME}]: " NEW_HOSTNAME
+        NEW_HOSTNAME=${NEW_HOSTNAME:-$CURRENT_HOSTNAME}
+        if [[ "$NEW_HOSTNAME" != "$CURRENT_HOSTNAME" ]]; then
+            hostnamectl set-hostname "$NEW_HOSTNAME"
+            log "Hostname set to: $NEW_HOSTNAME"
+        else
+            log "Hostname unchanged: $CURRENT_HOSTNAME"
+        fi
     fi
 else
     log "Non-interactive mode, hostname unchanged: $(hostname)"
@@ -283,34 +320,38 @@ else
         log "SSH key added for $HERMES_USER (from --ssh-key argument)."
     elif [[ -t 0 ]]; then
         # Interactive mode
-        echo ""
-        echo "┌────────────────────────────────────────────────────────────┐"
-        echo "│ SSH KEY SETUP                                              │"
-        echo "│                                                            │"
-        echo "│ Paste the PUBLIC KEY from your LOCAL machine below.        │"
-        echo "│                                                            │"
-        echo "│ If you don't have one, generate it on your local PC:       │"
-        echo "│   ssh-keygen -t ed25519 -C \"your-email@example.com\"        │"
-        echo "│                                                            │"
-        echo "│ Then copy the content of ~/.ssh/id_ed25519.pub             │"
-        echo "│ (or ~/.ssh/id_rsa.pub)                                     │"
-        echo "│                                                            │"
-        echo "│ Paste it below and press Ctrl+D when done:                 │"
-        echo "└────────────────────────────────────────────────────────────┘"
-        echo ""
-        echo -n "SSH public key: "
-        read -r HERMES_SSH_KEY
-
-        if [[ -n "$HERMES_SSH_KEY" ]]; then
-            echo "$HERMES_SSH_KEY" > "/home/$HERMES_USER/.ssh/authorized_keys"
-            chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
-            chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
-            log "SSH key added for $HERMES_USER."
+        if [[ "$BOOTSTRAP_RERUN" == true ]]; then
+            log "SSH key setup skipped (re-run)."
         else
-            warn "No SSH key provided for $HERMES_USER. You will need to add one manually."
-            touch "/home/$HERMES_USER/.ssh/authorized_keys"
-            chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
-            chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
+            echo ""
+            echo "┌────────────────────────────────────────────────────────────┐"
+            echo "│ SSH KEY SETUP                                              │"
+            echo "│                                                            │"
+            echo "│ Paste the PUBLIC KEY from your LOCAL machine below.        │"
+            echo "│                                                            │"
+            echo "│ If you don't have one, generate it on your local PC:       │"
+            echo "│   ssh-keygen -t ed25519 -C \"your-email@example.com\"        │"
+            echo "│                                                            │"
+            echo "│ Then copy the content of ~/.ssh/id_ed25519.pub             │"
+            echo "│ (or ~/.ssh/id_rsa.pub)                                     │"
+            echo "│                                                            │"
+            echo "│ Paste it below and press Ctrl+D when done:                 │"
+            echo "└────────────────────────────────────────────────────────────┘"
+            echo ""
+            echo -n "SSH public key: "
+            read -r HERMES_SSH_KEY
+
+            if [[ -n "$HERMES_SSH_KEY" ]]; then
+                echo "$HERMES_SSH_KEY" > "/home/$HERMES_USER/.ssh/authorized_keys"
+                chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
+                chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
+                log "SSH key added for $HERMES_USER."
+            else
+                warn "No SSH key provided for $HERMES_USER. You will need to add one manually."
+                touch "/home/$HERMES_USER/.ssh/authorized_keys"
+                chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
+                chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
+            fi
         fi
     else
         warn "Non-interactive mode and no --ssh-key provided. Skipping SSH key setup."
@@ -352,6 +393,8 @@ if [[ $mins -gt 0 ]]; then
 else
     elapsed="${secs}s"
 fi
+
+write_bootstrap_state
 
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════╗${NC}"
