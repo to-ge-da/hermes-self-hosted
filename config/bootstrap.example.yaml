@@ -1,0 +1,32 @@
+# bootstrap.yaml — Hermes self-hosted bootstrap configuration
+#
+# Usage:
+#   sudo ./scripts/bootstrap.sh --config config/bootstrap.yaml
+#
+# All fields are required unless marked optional.
+#
+# ─────────────────────────────────────────────────────────────
+# Hostname
+# ─────────────────────────────────────────────────────────────
+hostname: hermes-server
+
+# ─────────────────────────────────────────────────────────────
+# Timezone (must be a valid TZ identifier)
+# ─────────────────────────────────────────────────────────────
+timezone: America/Sao_Paulo
+
+# ─────────────────────────────────────────────────────────────
+# Hermes agent user
+# ─────────────────────────────────────────────────────────────
+hermes:
+  # User account name for the Hermes Agent (optional, default: "hermes")
+  user: hermes
+
+  # ── SSH public key ────────────────────────────────────────
+  # Choose ONE: inline key OR file path. Setting both is an error.
+  #
+  # Option A — inline key:
+  ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL0Gj..."
+  #
+  # Option B — file path:
+  # ssh_public_key_file: /home/admin/.ssh/hermes.pub
