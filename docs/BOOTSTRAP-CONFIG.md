@@ -1,8 +1,7 @@
 # Bootstrap Configuration Design
 
 > Design reference for the config-driven bootstrap refactoring.
-> This document describes **what** and **why** — implementation details
-> and migration steps go here. Implements issue #30.
+> This document describes **what** and **why**. Implements issue #30.
 
 ---
 
@@ -26,7 +25,7 @@
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `hostname` | string | yes | — | Desired server hostname |
-| `timezone` | string | yes | `"UTC"` | Valid TZ identifier (e.g. `America/Sao_Paulo`, `Europe/Berlin`) |
+| `timezone` | string | no | `"UTC"` | Valid TZ identifier (e.g. `America/Sao_Paulo`, `Europe/Berlin`) |
 | `hermes.user` | string | no | `hermes` | Hermes agent system account name |
 | `hermes.ssh_public_key` | string | no* | — | Inline SSH public key (e.g. `ssh-ed25519 AAAA...`) |
 | `hermes.ssh_public_key_file` | string | no* | — | Path to an SSH public key file on disk |
