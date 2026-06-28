@@ -2,6 +2,8 @@
 
 Initial system setup for a fresh Debian Server installation.
 
+> **Idempotent:** Safe to run multiple times. Already-configured steps (hostname, SSH key, root lock) are detected and skipped.
+
 ## What it does
 
 | Step | Description |
