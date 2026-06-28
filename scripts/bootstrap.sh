@@ -24,6 +24,36 @@ DEFAULT_TIMEZONE="UTC"
 SCRIPT_VERSION="1.0.0"
 
 # ──────────────────────
+# State
+# ──────────────────────
+STATE_DIR="/var/lib/hermes-self-hosted"
+STATE_FILE="${STATE_DIR}/bootstrap.state"
+BOOTSTRAP_RERUN=false
+
+load_bootstrap_state() {
+    if [[ -f "$STATE_FILE" ]]; then
+        BOOTSTRAP_RERUN=true
+        log "Previous bootstrap detected ($STATE_FILE), running in re-run mode."
+    elif id hermes &>/dev/null; then
+        BOOTSTRAP_RERUN=true
+        log "Legacy bootstrap detected (hermes user exists), running in re-run mode."
+    fi
+}
+
+write_bootstrap_state() {
+    mkdir -p "$STATE_DIR"
+    cat > "$STATE_FILE" <<EOF
+COMPLETED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+SCRIPT_VERSION=${SCRIPT_VERSION}
+HOSTNAME=${NEW_HOSTNAME}
+ADMIN_USER=${ADMIN_USER}
+HERMES_USER=${HERMES_USER}
+EOF
+    chmod 644 "$STATE_FILE"
+    log "Bootstrap state written to $STATE_FILE."
+}
+
+# ──────────────────────
 # Helpers
 # ──────────────────────
 RED='\033[0;31m'
@@ -127,6 +157,8 @@ fi
 
 show_banner
 
+load_bootstrap_state
+
 # ──────────────────────
 # 1. Fix /etc/hosts (avoid sudo: unable to resolve host)
 # ──────────────────────
@@ -148,7 +180,12 @@ fi
 # 2. System update
 # ──────────────────────
 log "Updating system packages..."
-apt update && apt upgrade -y
+if [[ -z "$(find /var/lib/apt/lists -maxdepth 0 -mmin -60 2>/dev/null)" ]]; then
+    apt update
+else
+    log "Package lists refreshed less than 60 min ago, skipping apt update."
+fi
+apt upgrade -y
 apt autoremove -y
 
 # ──────────────────────
@@ -172,26 +209,36 @@ apt install -y \
 # 4. Hostname
 # ──────────────────────
 if [[ -n "$HOSTNAME_ARG" ]]; then
-    log "Setting hostname (non-interactive): $HOSTNAME_ARG"
-    hostnamectl set-hostname "$HOSTNAME_ARG"
-    # Re-run /etc/hosts fix with the new hostname
-    CURRENT_HOSTNAME="$HOSTNAME_ARG"
-    if grep -q '^127\.0\.1\.1' /etc/hosts; then
-        sed -i "s/^127\.0\.1\.1.*/127.0.1.1\t$CURRENT_HOSTNAME/" /etc/hosts
+    if [[ "$(hostname)" == "$HOSTNAME_ARG" ]]; then
+        log "Hostname already set to $HOSTNAME_ARG, skipping."
+        NEW_HOSTNAME="$HOSTNAME_ARG"
     else
-        printf '127.0.1.1\t%s\n' "$CURRENT_HOSTNAME" >> /etc/hosts
+        log "Setting hostname (non-interactive): $HOSTNAME_ARG"
+        hostnamectl set-hostname "$HOSTNAME_ARG"
+        # Re-run /etc/hosts fix with the new hostname
+        CURRENT_HOSTNAME="$HOSTNAME_ARG"
+        if grep -q '^127\.0\.1\.1' /etc/hosts; then
+            sed -i "s/^127\.0\.1\.1.*/127.0.1.1\t$CURRENT_HOSTNAME/" /etc/hosts
+        else
+            printf '127.0.1.1\t%s\n' "$CURRENT_HOSTNAME" >> /etc/hosts
+        fi
+        NEW_HOSTNAME="$HOSTNAME_ARG"
     fi
-    NEW_HOSTNAME="$HOSTNAME_ARG"
 elif [[ -t 0 ]]; then
     # Interactive mode — only prompt if stdin is a terminal
     CURRENT_HOSTNAME=$(hostname)
-    read -rp "Enter hostname [${CURRENT_HOSTNAME}]: " NEW_HOSTNAME
-    NEW_HOSTNAME=${NEW_HOSTNAME:-$CURRENT_HOSTNAME}
-    if [[ "$NEW_HOSTNAME" != "$CURRENT_HOSTNAME" ]]; then
-        hostnamectl set-hostname "$NEW_HOSTNAME"
-        log "Hostname set to: $NEW_HOSTNAME"
+    if [[ "$BOOTSTRAP_RERUN" == true ]]; then
+        log "Hostname unchanged: $CURRENT_HOSTNAME (re-run, skipping prompt)"
+        NEW_HOSTNAME="$CURRENT_HOSTNAME"
     else
-        log "Hostname unchanged: $CURRENT_HOSTNAME"
+        read -rp "Enter hostname [${CURRENT_HOSTNAME}]: " NEW_HOSTNAME
+        NEW_HOSTNAME=${NEW_HOSTNAME:-$CURRENT_HOSTNAME}
+        if [[ "$NEW_HOSTNAME" != "$CURRENT_HOSTNAME" ]]; then
+            hostnamectl set-hostname "$NEW_HOSTNAME"
+            log "Hostname set to: $NEW_HOSTNAME"
+        else
+            log "Hostname unchanged: $CURRENT_HOSTNAME"
+        fi
     fi
 else
     log "Non-interactive mode, hostname unchanged: $(hostname)"
@@ -259,53 +306,61 @@ fi
 # ──────────────────────
 log "Setting up SSH for $HERMES_USER..."
 
-mkdir -p "/home/$HERMES_USER/.ssh"
-chmod 700 "/home/$HERMES_USER/.ssh"
+if [[ -f "/home/$HERMES_USER/.ssh/authorized_keys" ]] && [[ -s "/home/$HERMES_USER/.ssh/authorized_keys" ]]; then
+    warn "authorized_keys already exists, skipping. Remove manually if you want to replace."
+else
+    mkdir -p "/home/$HERMES_USER/.ssh"
+    chmod 700 "/home/$HERMES_USER/.ssh"
 
-if [[ -n "$SSH_KEY_ARG" ]]; then
-    # Non-interactive: key passed as argument
-    echo "$SSH_KEY_ARG" > "/home/$HERMES_USER/.ssh/authorized_keys"
-    chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
-    chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
-    log "SSH key added for $HERMES_USER (from --ssh-key argument)."
-elif [[ -t 0 ]]; then
-    # Interactive mode
-    echo ""
-    echo "┌────────────────────────────────────────────────────────────┐"
-    echo "│ SSH KEY SETUP                                              │"
-    echo "│                                                            │"
-    echo "│ Paste the PUBLIC KEY from your LOCAL machine below.        │"
-    echo "│                                                            │"
-    echo "│ If you don't have one, generate it on your local PC:       │"
-    echo "│   ssh-keygen -t ed25519 -C \"your-email@example.com\"        │"
-    echo "│                                                            │"
-    echo "│ Then copy the content of ~/.ssh/id_ed25519.pub             │"
-    echo "│ (or ~/.ssh/id_rsa.pub)                                     │"
-    echo "│                                                            │"
-    echo "│ Paste it below and press Ctrl+D when done:                 │"
-    echo "└────────────────────────────────────────────────────────────┘"
-    echo ""
-    echo -n "SSH public key: "
-    read -r HERMES_SSH_KEY
-
-    if [[ -n "$HERMES_SSH_KEY" ]]; then
-        echo "$HERMES_SSH_KEY" > "/home/$HERMES_USER/.ssh/authorized_keys"
+    if [[ -n "$SSH_KEY_ARG" ]]; then
+        # Non-interactive: key passed as argument
+        echo "$SSH_KEY_ARG" > "/home/$HERMES_USER/.ssh/authorized_keys"
         chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
         chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
-        log "SSH key added for $HERMES_USER."
+        log "SSH key added for $HERMES_USER (from --ssh-key argument)."
+    elif [[ -t 0 ]]; then
+        # Interactive mode
+        if [[ "$BOOTSTRAP_RERUN" == true ]]; then
+            log "SSH key setup skipped (re-run)."
+        else
+            echo ""
+            echo "┌────────────────────────────────────────────────────────────┐"
+            echo "│ SSH KEY SETUP                                              │"
+            echo "│                                                            │"
+            echo "│ Paste the PUBLIC KEY from your LOCAL machine below.        │"
+            echo "│                                                            │"
+            echo "│ If you don't have one, generate it on your local PC:       │"
+            echo "│   ssh-keygen -t ed25519 -C \"your-email@example.com\"        │"
+            echo "│                                                            │"
+            echo "│ Then copy the content of ~/.ssh/id_ed25519.pub             │"
+            echo "│ (or ~/.ssh/id_rsa.pub)                                     │"
+            echo "│                                                            │"
+            echo "│ Paste it below and press Ctrl+D when done:                 │"
+            echo "└────────────────────────────────────────────────────────────┘"
+            echo ""
+            echo -n "SSH public key: "
+            read -r HERMES_SSH_KEY
+
+            if [[ -n "$HERMES_SSH_KEY" ]]; then
+                echo "$HERMES_SSH_KEY" > "/home/$HERMES_USER/.ssh/authorized_keys"
+                chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
+                chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
+                log "SSH key added for $HERMES_USER."
+            else
+                warn "No SSH key provided for $HERMES_USER. You will need to add one manually."
+                touch "/home/$HERMES_USER/.ssh/authorized_keys"
+                chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
+                chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
+            fi
+        fi
     else
-        warn "No SSH key provided for $HERMES_USER. You will need to add one manually."
+        warn "Non-interactive mode and no --ssh-key provided. Skipping SSH key setup."
+        warn "Add SSH key manually later:"
+        warn "  echo 'ssh-ed25519 AAAA...' | sudo tee /home/$HERMES_USER/.ssh/authorized_keys"
         touch "/home/$HERMES_USER/.ssh/authorized_keys"
         chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
         chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
     fi
-else
-    warn "Non-interactive mode and no --ssh-key provided. Skipping SSH key setup."
-    warn "Add SSH key manually later:"
-    warn "  echo 'ssh-ed25519 AAAA...' | sudo tee /home/$HERMES_USER/.ssh/authorized_keys"
-    touch "/home/$HERMES_USER/.ssh/authorized_keys"
-    chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
-    chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
 fi
 
 # ──────────────────────
@@ -319,9 +374,13 @@ fi
 # ──────────────────────
 # 11. Lock root account
 # ──────────────────────
-log "Locking root account..."
-passwd -l root
-log "Root account locked."
+if passwd -S root 2>/dev/null | grep -q " L "; then
+    log "Root account already locked, skipping."
+else
+    log "Locking root account..."
+    passwd -l root
+    log "Root account locked."
+fi
 
 # ──────────────────────
 # Done
@@ -334,6 +393,8 @@ if [[ $mins -gt 0 ]]; then
 else
     elapsed="${secs}s"
 fi
+
+write_bootstrap_state
 
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════╗${NC}"

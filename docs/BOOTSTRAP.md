@@ -2,6 +2,18 @@
 
 Initial system setup for a fresh Debian Server installation.
 
+> **Idempotent:** Safe to run multiple times. Already-configured steps are detected and skipped. A state file at `/var/lib/hermes-self-hosted/bootstrap.state` tracks completed runs.
+
+## Re-running bootstrap
+
+Running the script again on an already-bootstrapped system is fully supported:
+
+- **State file detection** — `/var/lib/hermes-self-hosted/bootstrap.state` is written at the end of a successful run. On re-run, interactive prompts (hostname, SSH key) are automatically skipped.
+- **Legacy backfill** — Systems bootstrapped before the state file was introduced will also skip interactive prompts if a `hermes` user exists.
+- **To change hostname on re-run** — Use `--hostname NAME` instead of relying on the interactive prompt.
+- **To force interactive mode** — Remove the state file: `sudo rm /var/lib/hermes-self-hosted/bootstrap.state`
+- **Partial runs** — If the script fails mid-way, the state file is not written, so the next run will still show interactive prompts.
+
 ## What it does
 
 | Step | Description |
@@ -15,6 +27,7 @@ Initial system setup for a fresh Debian Server installation.
 | Hermes user | Creates a dedicated agent user `hermes` (no sudo, key-only) |
 | Root lock | Locks root account |
 | SSH drop-in dir | Creates `/etc/ssh/sshd_config.d/` |
+| State file | Writes `/var/lib/hermes-self-hosted/bootstrap.state` on success |
 
 ## Essential packages
 
