@@ -156,7 +156,7 @@ HOSTNAME=hermes-server
 ADMIN_USER=admin
 HERMES_USER=hermes
 PREVIOUS_HOSTNAME=debian-default
-CONFIG_HASH=<sha256-of-resolved-config-path>
+CONFIG_HASH=<sha256-of-config-file-contents>
 MISE_VERSION=2024.x.x
 ```
 
@@ -165,8 +165,12 @@ MISE_VERSION=2024.x.x
 | Field | Purpose |
 |---|---|
 | `PREVIOUS_HOSTNAME` | Previous hostname before this run (for future uninstall) |
-| `CONFIG_HASH` | SHA-256 of the config file used (for change detection) |
+| `CONFIG_HASH` | SHA-256 of the **config file contents** (not the path) for change detection |
 | `MISE_VERSION` | Mise version at bootstrap time (for upgrade awareness) |
+
+On re-run, bootstrap recomputes the content hash and logs whether the config
+changed since the last successful run. Idempotent step checks (hostname match,
+user exists, etc.) remain the source of truth for what to apply.
 
 ---
 

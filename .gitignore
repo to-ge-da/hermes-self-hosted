@@ -12,3 +12,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+
+# Local bootstrap config (may contain SSH keys) — keep the example tracked
+config/bootstrap.yaml

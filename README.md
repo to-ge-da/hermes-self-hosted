@@ -18,18 +18,22 @@ Run Hermes Agent 24/7 on dedicated hardware, with a clean, step-by-step document
 .
 ├── README.md
 ├── docs/
-│   ├── BOOTSTRAP.md       # Initial system setup: users, SSH, base config
-│   ├── HARDENING.md       # Server security hardening
-│   ├── NETWORK.md         # Static IP and DNS configuration
-│   ├── INSTALL-HERMES.md  # Hermes Agent installation guide
-│   ├── MISE-SYSTEM-WIDE.md# System-wide mise activation
-│   └── GITHUB_TEMPLATES.md# GitHub templates documentation
+│   ├── BOOTSTRAP.md         # Initial system setup: users, SSH, base config
+│   ├── BOOTSTRAP-CONFIG.md  # Config schema, mise, state conventions
+│   ├── HARDENING.md         # Server security hardening
+│   ├── NETWORK.md           # Static IP and DNS configuration
+│   ├── INSTALL-HERMES.md    # Hermes Agent installation guide
+│   ├── MISE-SYSTEM-WIDE.md  # System-wide mise activation
+│   └── GITHUB_TEMPLATES.md  # GitHub templates documentation
+├── config/
+│   └── bootstrap.example.yaml  # Copy to bootstrap.yaml (gitignored)
+├── mise.toml                # Pinned host tools (yq) for bootstrap
 ├── scripts/
-│   ├── examples/          # Original legacy scripts (reference)
+│   ├── examples/            # Original legacy scripts (reference)
 │   │   ├── hardening-linux-01.sh
 │   │   └── hardening-linux-02.sh
-│   ├── bootstrap.sh       # Interactive first-boot setup
-│   ├── hardening.sh       # Security hardening (run after bootstrap)
+│   ├── bootstrap.sh         # Config-driven first-boot setup
+│   ├── hardening.sh         # Security hardening (run after bootstrap)
 │   └── install-mise-system-wide.sh  # System-wide mise activation
 ├── .github/
 │   ├── PULL_REQUEST_TEMPLATE.md   # PR template with checklist
@@ -41,7 +45,7 @@ Run Hermes Agent 24/7 on dedicated hardware, with a clean, step-by-step document
 
 ## Installation Order
 
-1. **[bootstrap.sh](scripts/bootstrap.sh)** — System update, users, SSH keys, hostname
+1. **[bootstrap.sh](scripts/bootstrap.sh)** — Config-driven system update, users, SSH keys, hostname (`--config`)
 2. **[hardening.sh](scripts/hardening.sh)** — Firewall, kernel, auditd, file permissions
 3. **[NETWORK.md](docs/NETWORK.md)** — Configure static IP and DNS
 4. **[INSTALL-HERMES.md](docs/INSTALL-HERMES.md)** — Install Hermes Agent and gateway
