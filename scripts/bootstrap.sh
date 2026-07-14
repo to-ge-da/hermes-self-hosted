@@ -85,24 +85,12 @@ usage() {
     cat <<EOF
 Usage: $0 [--config PATH] [-h|--help]
 
-Config-driven first-boot setup for Debian. Reads hostname, timezone, and
-Hermes SSH settings from a YAML file. No interactive prompts.
-
 Options:
-  --config PATH       Path to bootstrap.yaml (see config/bootstrap.example.yaml)
-  -h, --help          Show this help message
+  --config PATH   Path to bootstrap.yaml (see config/bootstrap.example.yaml)
+  -h, --help      Show this help message
 
-Config path resolution (first match wins):
-  1. --config PATH
-  2. ./config/bootstrap.yaml (cwd)
-  3. <repo>/config/bootstrap.yaml (relative to this script)
-
-Examples:
-  sudo ./scripts/bootstrap.sh --config config/bootstrap.yaml
-  sudo ./scripts/bootstrap.sh
-
-Legacy flags --hostname, --timezone, and --ssh-key are removed.
-Put those values in the YAML config instead.
+Example:
+  sudo ./bootstrap.sh --config config/bootstrap.yaml
 EOF
     exit 0
 }
