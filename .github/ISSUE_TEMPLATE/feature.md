@@ -44,4 +44,4 @@ assignees: []
 
 Use **Feature** for new capability proposals. Use **Task** for scoped implementation work once the approach is clear.
 
-Workflow: see [AGENTS.md](../../AGENTS.md).
+Conventions: see [AGENTS.md](../../AGENTS.md).

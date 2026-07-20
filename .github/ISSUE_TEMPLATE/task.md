@@ -38,4 +38,4 @@ Link to related issues, discussions, or documentation.
 <!-- Optional. -->
 - `path/to/file.sh`
 
-Workflow: see [AGENTS.md](../../AGENTS.md).
+Conventions: see [AGENTS.md](../../AGENTS.md).

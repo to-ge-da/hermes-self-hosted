@@ -54,4 +54,4 @@ assignees: []
 <!-- Optional. -->
 - `path/to/file.sh`
 
-Workflow: see [AGENTS.md](../../AGENTS.md).
+Conventions: see [AGENTS.md](../../AGENTS.md).

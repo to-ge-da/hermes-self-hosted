@@ -89,7 +89,7 @@ Automatically appears when opening a PR. Includes:
 
 ## Workflow Integration
 
-Per [AGENTS.md](../AGENTS.md):
+Typical flow for this repository:
 
 ```
 Issue Created (using template)
