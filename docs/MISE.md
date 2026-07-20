@@ -20,7 +20,7 @@ Today that pins:
 yq = "4.53.3"
 ```
 
-Bootstrap runs `mise exec -- yq` to parse the YAML config. Details: [BOOTSTRAP-CONFIG.md](BOOTSTRAP-CONFIG.md) (mise section) and [BOOTSTRAP.md](BOOTSTRAP.md) (prerequisites).
+Bootstrap runs `mise exec -- yq` to parse the YAML config. Details: [BOOTSTRAP.md](BOOTSTRAP.md) (purpose and prerequisites).
 
 ## Install mise and tools
 
@@ -145,5 +145,5 @@ Then open a new login session so PATH no longer references mise shims.
 ## References
 
 - [mise documentation](https://mise.jdx.dev/)
-- [BOOTSTRAP.md](BOOTSTRAP.md) — one-time tool setup before bootstrap  
-- [BOOTSTRAP-CONFIG.md](BOOTSTRAP-CONFIG.md) — mise/yq integration details  
+- [BOOTSTRAP.md](BOOTSTRAP.md) — first-boot setup; requires mise + yq  
+
