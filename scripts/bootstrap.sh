@@ -4,14 +4,15 @@
 # Run as root on a fresh Debian Server installation.
 #
 # Usage:
-#   sudo ./scripts/bootstrap.sh --config config/bootstrap.yaml
-#   sudo ./scripts/bootstrap.sh   # uses config path fallbacks (see docs/BOOTSTRAP-CONFIG.md)
+#   sudo ./bootstrap.sh --config /path/to/host.yaml
+#   sudo ./bootstrap.sh   # uses bootstrap.yaml next to this script, if present
 #
 # Pre-condition: the admin user already exists (created during Debian OS
 # installation). This script does NOT create the admin user — only hermes.
 #
 # Configuration is YAML-only. Interactive prompts and legacy flags
 # (--hostname, --timezone, --ssh-key) are not supported.
+# The script is standalone: inject any config path via --config.
 #
 
 set -euo pipefail
@@ -24,7 +25,7 @@ DEFAULT_TIMEZONE="UTC"
 DEFAULT_HERMES_USER="hermes"
 SCRIPT_VERSION="2.0.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+WORK_DIR="$(pwd)"
 LEGACY_STATE_FILE="/var/lib/hermes-self-hosted/bootstrap.state"
 
 # ──────────────────────
@@ -48,12 +49,12 @@ PREVIOUS_HOSTNAME=""
 # ──────────────────────
 # Helpers
 # ──────────────────────
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-NC='\033[0m'
+RED=$'\033[0;31m'
+GREEN=$'\033[0;32m'
+YELLOW=$'\033[1;33m'
+CYAN=$'\033[0;36m'
+BOLD=$'\033[1m'
+NC=$'\033[0m'
 
 show_banner() {
     local term_width
@@ -86,17 +87,17 @@ usage() {
 Usage: $0 [--config PATH] [-h|--help]
 
 Options:
-  --config PATH   Path to bootstrap.yaml (see config/bootstrap.example.yaml)
+  --config PATH   Path to a bootstrap YAML file (any path; schema must validate)
   -h, --help      Show this help message
 
 Example:
-  sudo ./bootstrap.sh --config config/bootstrap.yaml
+  sudo ./bootstrap.sh --config ./bootstrap.yaml
 EOF
     exit 0
 }
 
 legacy_flag_error() {
-    err "Flag '$1' is no longer supported. Use --config with a YAML file (see config/bootstrap.example.yaml)."
+    err "Flag '$1' is no longer supported. Use --config with a YAML file."
 }
 
 # Run a command as ADMIN_USER with a login-like env and mise on PATH.
@@ -107,7 +108,7 @@ run_as_admin() {
 yq_eval() {
     local expression="$1"
     local file="$2"
-    run_as_admin "cd $(printf '%q' "$REPO_ROOT") && mise exec -- yq eval $(printf '%q' "$expression") $(printf '%q' "$file")"
+    run_as_admin "cd $(printf '%q' "$WORK_DIR") && mise exec -- yq eval $(printf '%q' "$expression") $(printf '%q' "$file")"
 }
 
 # ──────────────────────
@@ -178,9 +179,9 @@ ensure_mise() {
             || err "mise installed but not found on PATH for $ADMIN_USER (expected ~/.local/bin/mise)."
     fi
 
-    log "Running mise install at repo root ($REPO_ROOT)..."
-    if ! run_as_admin "cd $(printf '%q' "$REPO_ROOT") && mise install"; then
-        err "mise install failed. Ensure $REPO_ROOT/mise.toml exists and the host can download tools."
+    log "Running mise install in working directory ($WORK_DIR)..."
+    if ! run_as_admin "cd $(printf '%q' "$WORK_DIR") && mise install"; then
+        err "mise install failed. Ensure $WORK_DIR/mise.toml exists and the host can download tools."
     fi
 
     MISE_VERSION="$(run_as_admin 'mise --version' | head -n1 | tr -d '\r')"
@@ -193,28 +194,25 @@ ensure_mise
 # Config resolution, load, validate
 # ──────────────────────
 resolve_config_path() {
+    # Standalone tool: inject any config path via --config.
+    # Without --config, only bootstrap.yaml next to this script is accepted.
     if [[ -n "$CONFIG_ARG" ]]; then
         if [[ -f "$CONFIG_ARG" ]]; then
-            # Prefer absolute path for hashing / later reads
             CONFIG_PATH="$(cd "$(dirname "$CONFIG_ARG")" && pwd)/$(basename "$CONFIG_ARG")"
             return 0
         fi
         err "Config file not found: $CONFIG_ARG"
     fi
 
-    if [[ -f "./config/bootstrap.yaml" ]]; then
-        CONFIG_PATH="$(cd ./config && pwd)/bootstrap.yaml"
-        return 0
-    fi
-
-    if [[ -f "${REPO_ROOT}/config/bootstrap.yaml" ]]; then
-        CONFIG_PATH="${REPO_ROOT}/config/bootstrap.yaml"
+    if [[ -f "${SCRIPT_DIR}/bootstrap.yaml" ]]; then
+        CONFIG_PATH="${SCRIPT_DIR}/bootstrap.yaml"
         return 0
     fi
 
     err "No bootstrap configuration found.
-Use --config PATH to specify a config file.
-See config/bootstrap.example.yaml for an example."
+Use --config PATH to specify a YAML config file (any path).
+Or place bootstrap.yaml next to this script.
+See bootstrap.example.yaml for the expected format."
 }
 
 validate_hostname() {

@@ -1,7 +1,8 @@
 # bootstrap.yaml — Hermes self-hosted bootstrap configuration
 #
-# Usage:
-#   sudo ./scripts/bootstrap.sh --config config/bootstrap.yaml
+# Usage (any path is fine):
+#   sudo ./bootstrap.sh --config ./bootstrap.yaml
+#   sudo ./bootstrap.sh --config /path/to/host.yaml
 #
 # All fields are required unless marked optional.
 #

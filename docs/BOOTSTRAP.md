@@ -13,28 +13,35 @@ resolution, mise/yq integration, and state migration details.
 ## Prerequisites
 
 1. Fresh Debian Server with an admin user created during OS install
-2. A filled-in config file based on `config/bootstrap.example.yaml`
+2. A filled-in YAML config (any path) based on `config/bootstrap.example.yaml`
 3. Network access on first run (mise installs the pinned `yq` tool)
+4. Run from a directory that contains `mise.toml` (e.g. the project root)
 
 Copy the example and edit values (do **not** commit real keys):
 
 ```bash
-cp config/bootstrap.example.yaml config/bootstrap.yaml
+cp config/bootstrap.example.yaml ./bootstrap.yaml
 # edit hostname, timezone, hermes.ssh_public_key (or ssh_public_key_file)
 ```
 
 ## Usage
 
 ```bash
-# From the repo clone on the server
+# Inject any config path (recommended)
+sudo ./scripts/bootstrap.sh --config ./bootstrap.yaml
+sudo ./scripts/bootstrap.sh --config /etc/hermes/host.yaml
+
+# From a clone, with mise.toml in the current directory
+cd /path/to/hermes-self-hosted
 sudo ./scripts/bootstrap.sh --config config/bootstrap.yaml
 
-# Or rely on path fallbacks (cwd or script-relative config/bootstrap.yaml)
-sudo ./scripts/bootstrap.sh
+# Or place bootstrap.yaml next to bootstrap.sh and omit --config
+sudo ./bootstrap.sh
 ```
 
 Legacy flags (`--hostname`, `--timezone`, `--ssh-key`) and interactive prompts
-are removed. Put those values in the YAML config.
+are removed. Put those values in the YAML config. Path names are not special —
+only the file contents must validate.
 
 ## What it does
 
