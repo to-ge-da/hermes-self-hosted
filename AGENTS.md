@@ -6,9 +6,8 @@ Conventions for humans and Cursor working in this repository.
 
 **Repo:** `to-ge-da/hermes-self-hosted`
 
-Prepare a Debian host and install **one Hermes Agent instance** (bootstrap/hardening scripts + the official Hermes installer).
-
-**Deployment targets**
+Scripts and docs to prepare a Debian host and install one Hermes Agent instance
+(bootstrap, hardening, then the official Hermes installer).
 
 | Target | Status |
 |---|---|
@@ -16,27 +15,11 @@ Prepare a Debian host and install **one Hermes Agent instance** (bootstrap/harde
 | VPS | Not covered yet |
 | Amazon EC2 | Not covered yet |
 
-**Limits today:** single instance per host; multi-instance is not supported.
+Single instance per host today. Multi-instance is not supported.
 
-**Stack:** Bash scripts + Hermes Agent (via official installer). Models use an external API (OpenRouter); local inference is TBD.
+**Stack:** Bash scripts + Hermes Agent (official installer). Models via external API (OpenRouter); local inference TBD.
 
 In this repo, **Hermes** means the agent product, its system user, and the install target — not a GitHub workflow role.
-
-## Workflow
-
-```
-Issue (optional; use a template)
-    ↓
-Branch: feat/... | fix/... | chore/...
-    ↓
-Code & test
-    ↓
-Commit (Conventional Commits)
-    ↓
-PR against main
-    ↓
-Review → squash merge → delete branch
-```
 
 ## Git Conventions
 
