@@ -23,8 +23,6 @@ This repository prepares a Debian host and installs **one** Hermes Agent instanc
 
 ## Docs
 
-Ordered self-hosted path: [INSTALLATION.md](docs/INSTALLATION.md).
-
 | Doc | Topic |
 |---|---|
 | [INSTALLATION.md](docs/INSTALLATION.md) | Ordered self-hosted install path |
