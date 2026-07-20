@@ -51,7 +51,7 @@ HERMES reviews the PR
 
 ## Code Standards
 
-- **Scripts:** `scripts/`, `#!/bin/bash`, `set -euo pipefail`, `--help` flag, interactive + non-interactive modes
+- **Scripts:** `scripts/`, `#!/bin/bash`, `set -euo pipefail`, `--help` flag; bootstrap is config-driven (YAML via `--config`, no interactive prompts)
 - **Documentation:** `docs/` directory, Markdown
 
 ## Testing

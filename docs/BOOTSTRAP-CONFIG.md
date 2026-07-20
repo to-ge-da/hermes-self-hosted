@@ -79,21 +79,23 @@ hermes:
 
 ## Path Resolution
 
-The config file is resolved in the following order. The first match wins.
+Bootstrap is a **standalone tool**. Config is injected; there is no required
+directory name such as `config/`. Any path is fine if the YAML schema and values
+validate.
 
-1. **Explicit path** — `--config /path/to/bootstrap.yaml`
-2. **Working directory** — `./config/bootstrap.yaml` (typical when run from repo clone)
-3. **Script-relative** — `$SCRIPT_DIR/../config/bootstrap.yaml` (where `$SCRIPT_DIR` is the directory containing `scripts/bootstrap.sh`)
-4. **Failure** — If none of the above exist, bootstrap exits with:
+Resolution order (first match wins):
+
+1. **Explicit path** — `--config PATH`  
+   Absolute or relative to the **current working directory**. Examples:
+   `/etc/hermes/host.yaml`, `./my-host.yaml`, `config/bootstrap.yaml`.
+2. **Script sibling** — `$SCRIPT_DIR/bootstrap.yaml`  
+   Only if `--config` was omitted. Looks next to `bootstrap.sh` and nowhere else.
+3. **Failure** — If neither exists:
    > Error: No bootstrap configuration found.
-   > Use --config PATH to specify a config file.
-   > See config/bootstrap.example.yaml for an example.
+   > Use --config PATH to specify a YAML config file (any path).
+   > Or place bootstrap.yaml next to this script.
 
-### Why this order?
-
-- Explicit flag is the most predictable — ideal for automation and out-of-repo usage.
-- CWD-relative covers the common case of `cd repo-clone && sudo ./scripts/bootstrap.sh --config config/bootstrap.yaml` (omitted flag style).
-- Script-relative covers the case of `sudo ./scripts/bootstrap.sh` from the repo root without specifying `--config`.
+There is **no** repo-root or `../config` fallback.
 
 ---
 
@@ -106,24 +108,30 @@ version-pinned tool installations without requiring system-wide package manager 
 Bootstrap uses mise to run `yq` for YAML parsing — avoiding the apt version of yq
 (which is a different, incompatible implementation).
 
-### `mise.toml` at repo root
+### `mise.toml` in the working directory
 
-The file `mise.toml` at the repository root declares tool dependencies:
+You install tools **once** yourself in the directory that has `mise.toml`
+(the repo clone includes one at the project root):
 
 ```toml
 [tools]
 yq = "4.53.3"
 ```
 
-Adding new tools (Node.js, Python, etc.) is as simple as appending a line.
+```bash
+curl https://mise.run | sh
+mise install
+```
+
+Bootstrap then runs `mise exec -- yq` from the **current working directory**
+(`pwd` at invocation). It does **not** install mise or run `mise install`.
 
 ### Bootstrap integration
 
-1. At script start, bootstrap checks if mise is installed for `$SUDO_USER`.
-2. If absent, it installs mise for `$SUDO_USER` (not system-wide).
-3. Bootstrap `cd`s to the repo root and runs `mise install` to fetch pinned tools.
-4. All YAML parsing uses `mise exec -- yq eval ...` — no shell aliases or PATH tweaks needed.
-5. Bootstrap does **not** depend on `install-mise-system-wide.sh`. That script is optional
+1. Resolve config (`--config` or sibling `bootstrap.yaml`) — fail fast if missing.
+2. Require mise + yq already available for `$SUDO_USER` — fail fast if not.
+3. Parse YAML with `mise exec -- yq eval ...`.
+4. Bootstrap does **not** depend on `install-mise-system-wide.sh`. That script is optional
    and provided separately for environments that want all users to have mise in PATH.
 
 ### Why not apt yq?
@@ -156,7 +164,7 @@ HOSTNAME=hermes-server
 ADMIN_USER=admin
 HERMES_USER=hermes
 PREVIOUS_HOSTNAME=debian-default
-CONFIG_HASH=<sha256-of-resolved-config-path>
+CONFIG_HASH=<sha256-of-config-file-contents>
 MISE_VERSION=2024.x.x
 ```
 
@@ -165,8 +173,12 @@ MISE_VERSION=2024.x.x
 | Field | Purpose |
 |---|---|
 | `PREVIOUS_HOSTNAME` | Previous hostname before this run (for future uninstall) |
-| `CONFIG_HASH` | SHA-256 of the config file used (for change detection) |
+| `CONFIG_HASH` | SHA-256 of the **config file contents** (not the path) for change detection |
 | `MISE_VERSION` | Mise version at bootstrap time (for upgrade awareness) |
+
+On re-run, bootstrap recomputes the content hash and logs whether the config
+changed since the last successful run. Idempotent step checks (hostname match,
+user exists, etc.) remain the source of truth for what to apply.
 
 ---
 
@@ -225,18 +237,20 @@ sudo ./bootstrap.sh [--config PATH] [--check | --dry-run]
 
 ---
 
-## Out-of-Repo Case
+## Standalone / out-of-repo usage
 
-When `bootstrap.sh` is copied outside the repository clone (without `mise.toml`,
-`config/`, or other collateral), the explicit `--config` flag is **required**.
-The working-directory and script-relative fallbacks will not find anything
-(since `config/` and `mise.toml` are not present).
+Copy `bootstrap.sh` anywhere and inject a config file:
 
-Documentation for standalone usage:
-
-```
-sudo ./bootstrap.sh --config /path/to/bootstrap.yaml
+```bash
+sudo ./bootstrap.sh --config /path/to/any-host.yaml
 ```
 
-The example config at `config/bootstrap.example.yaml` should also be copied alongside
-`bootstrap.sh` for reference.
+Or place `bootstrap.yaml` next to the script and omit `--config`:
+
+```bash
+sudo ./bootstrap.sh
+```
+
+Run from a directory with `mise.toml` after you have already run `mise install`
+so `yq` is available. Use `bootstrap.example.yaml` as a format template — it is
+not a required path.
