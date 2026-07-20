@@ -33,6 +33,9 @@ cp config/bootstrap.example.yaml ./bootstrap.yaml
 # edit hostname, timezone, hermes.ssh_public_key (or ssh_public_key_file)
 ```
 
+If you prepare `bootstrap.yaml` (or an SSH public key) on your workstation, copy it
+to the host with `scp` or `rsync` — see [FILE-TRANSFER.md](FILE-TRANSFER.md).
+
 ## Usage
 
 ```bash

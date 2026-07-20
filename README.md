@@ -20,6 +20,7 @@ Run Hermes Agent 24/7 on dedicated hardware, with a clean, step-by-step document
 ├── docs/
 │   ├── BOOTSTRAP.md         # Initial system setup: users, SSH, base config
 │   ├── BOOTSTRAP-CONFIG.md  # Config schema, mise, state conventions
+│   ├── FILE-TRANSFER.md     # Copy files to the host (scp / rsync)
 │   ├── HARDENING.md         # Server security hardening
 │   ├── NETWORK.md           # Static IP and DNS configuration
 │   ├── INSTALL-HERMES.md    # Hermes Agent installation guide
@@ -45,11 +46,12 @@ Run Hermes Agent 24/7 on dedicated hardware, with a clean, step-by-step document
 
 ## Installation Order
 
-1. **[bootstrap.sh](scripts/bootstrap.sh)** — Config-driven system update, users, SSH keys, hostname (`--config`)
-2. **[hardening.sh](scripts/hardening.sh)** — Firewall, kernel, auditd, file permissions
-3. **[NETWORK.md](docs/NETWORK.md)** — Configure static IP and DNS
-4. **[INSTALL-HERMES.md](docs/INSTALL-HERMES.md)** — Install Hermes Agent and gateway
-5. **[MISE-SYSTEM-WIDE.md](docs/MISE-SYSTEM-WIDE.md)** — System-wide mise activation (optional)
+1. **[FILE-TRANSFER.md](docs/FILE-TRANSFER.md)** — Copy config/keys to the host (`scp` / `rsync`) as needed
+2. **[bootstrap.sh](scripts/bootstrap.sh)** — Config-driven system update, users, SSH keys, hostname (`--config`)
+3. **[hardening.sh](scripts/hardening.sh)** — Firewall, kernel, auditd, file permissions
+4. **[NETWORK.md](docs/NETWORK.md)** — Configure static IP and DNS
+5. **[INSTALL-HERMES.md](docs/INSTALL-HERMES.md)** — Install Hermes Agent and gateway
+6. **[MISE-SYSTEM-WIDE.md](docs/MISE-SYSTEM-WIDE.md)** — System-wide mise activation (optional)
 
 ## Contributing
 
