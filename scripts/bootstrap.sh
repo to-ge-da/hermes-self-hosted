@@ -57,25 +57,17 @@ BOLD=$'\033[1m'
 NC=$'\033[0m'
 
 show_banner() {
-    local term_width
-    term_width=$(tput cols 2>/dev/null || echo 0)
-    local width=50
-    if [[ $term_width -lt $width ]] || [[ $term_width -gt 200 ]]; then
-        width=$term_width
-    fi
-    local inner=$((width - 4))
-    local half=$((inner / 2))
-    local pad_total=$((half - 12))
-    local pad1=$((pad_total > 0 ? pad_total : 0))
-
-    printf '\n'
-    printf '%s╔%s╗\n' "$GREEN" "$(printf '═%.0s' $(seq 1 $inner))"
-    printf '%s║%s║\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $inner))"
-    printf '%s║%shermes-self-hosted%s║\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $pad1))" "$(printf ' %.0s' $(seq 1 $pad1))"
-    printf '%s║%sBootstrap Script v%s%s%s║\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $pad1))" "$CYAN" "$SCRIPT_VERSION" "$(printf ' %.0s' $(seq 1 $((inner - pad1 * 2 - 20))))"
-    printf '%s║%s║\n' "$GREEN" "$(printf ' %.0s' $(seq 1 $inner))"
-    printf '%s╚%s╝\n' "$GREEN" "$(printf '═%.0s' $(seq 1 $inner))"
-    printf '\n'
+    # Hardcoded FIGlet Slant wordmark (no figlet/ascii-banner runtime dependency).
+    printf '\n%s' "$GREEN"
+    cat <<'EOF'
+    __  ____________  __  ______________
+   / / / / ____/ __ \/  |/  / ____/ ___/
+  / /_/ / __/ / /_/ / /|_/ / __/  \__ \
+ / __  / /___/ _, _/ /  / / /___ ___/ /
+/_/ /_/_____/_/ |_/_/  /_/_____//____/
+EOF
+    printf '%s' "$NC"
+    printf '%sbootstrap v%s%s\n\n' "$CYAN" "$SCRIPT_VERSION" "$NC"
 }
 
 log()  { echo -e "${GREEN}[BOOTSTRAP]${NC} $1"; }
