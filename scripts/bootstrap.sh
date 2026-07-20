@@ -10,6 +10,10 @@
 # Pre-condition: the admin user already exists (created during Debian OS
 # installation). This script does NOT create the admin user — only hermes.
 #
+# Tooling pre-condition: mise and pinned yq must already be available
+# (install once yourself — see docs/BOOTSTRAP.md). This script does not
+# install mise/yq; it fail-fast checks then configures the host.
+#
 # Configuration is YAML-only. Interactive prompts and legacy flags
 # (--hostname, --timezone, --ssh-key) are not supported.
 # The script is standalone: inject any config path via --config.
@@ -157,33 +161,7 @@ log "Detected admin user: $ADMIN_USER"
 log "State directory: $STATE_DIR"
 
 # ──────────────────────
-# Mise bootstrap (per-user; not system-wide)
-# ──────────────────────
-ensure_mise() {
-    if run_as_admin 'command -v mise >/dev/null 2>&1'; then
-        log "mise already available for $ADMIN_USER."
-    else
-        log "Installing mise for $ADMIN_USER (per-user, not system-wide)..."
-        if ! curl -fsSL https://mise.run | sudo -u "$ADMIN_USER" -H bash; then
-            err "Failed to install mise for $ADMIN_USER. Network access is required on first run."
-        fi
-        run_as_admin 'command -v mise >/dev/null 2>&1' \
-            || err "mise installed but not found on PATH for $ADMIN_USER (expected ~/.local/bin/mise)."
-    fi
-
-    log "Running mise install in working directory ($WORK_DIR)..."
-    if ! run_as_admin "cd $(printf '%q' "$WORK_DIR") && mise install"; then
-        err "mise install failed. Ensure $WORK_DIR/mise.toml exists and the host can download tools."
-    fi
-
-    MISE_VERSION="$(run_as_admin 'mise --version' | head -n1 | tr -d '\r')"
-    log "mise ready: $MISE_VERSION"
-}
-
-ensure_mise
-
-# ──────────────────────
-# Config resolution, load, validate
+# Fail-fast preflight (no tool installs)
 # ──────────────────────
 resolve_config_path() {
     # Standalone tool: inject any config path via --config.
@@ -201,11 +179,30 @@ resolve_config_path() {
         return 0
     fi
 
-    err "No bootstrap configuration found.
-Use --config PATH to specify a YAML config file (any path).
-Or place bootstrap.yaml next to this script.
-See bootstrap.example.yaml for the expected format."
+    err "No config found. Use --config PATH (or put bootstrap.yaml next to this script)."
 }
+
+# Require mise + yq already available. Bootstrap does not install them.
+require_mise_yq() {
+    if ! run_as_admin 'command -v mise >/dev/null 2>&1'; then
+        err "mise/yq not ready. Install mise, then run: mise install (see docs/BOOTSTRAP.md)."
+    fi
+
+    if ! run_as_admin "cd $(printf '%q' "$WORK_DIR") && mise exec -- yq --version >/dev/null 2>&1"; then
+        err "mise/yq not ready. Install mise, then run: mise install (see docs/BOOTSTRAP.md)."
+    fi
+
+    MISE_VERSION="$(run_as_admin 'mise --version' | head -n1 | tr -d '\r')"
+    log "mise/yq ready: $MISE_VERSION"
+}
+
+resolve_config_path
+log "Using config: $CONFIG_PATH"
+require_mise_yq
+
+# ──────────────────────
+# Config load + validate
+# ──────────────────────
 
 validate_hostname() {
     local name="$1"
@@ -245,9 +242,6 @@ yq_str() {
 }
 
 load_and_validate_config() {
-    resolve_config_path
-    log "Using config: $CONFIG_PATH"
-
     CONFIG_HASH="$(sha256sum "$CONFIG_PATH" | awk '{print $1}')"
     log "Config content hash: $CONFIG_HASH"
 

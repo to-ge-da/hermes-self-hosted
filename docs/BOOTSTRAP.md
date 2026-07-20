@@ -14,8 +14,17 @@ resolution, mise/yq integration, and state migration details.
 
 1. Fresh Debian Server with an admin user created during OS install
 2. A filled-in YAML config (any path) based on `config/bootstrap.example.yaml`
-3. Network access on first run (mise installs the pinned `yq` tool)
-4. Run from a directory that contains `mise.toml` (e.g. the project root)
+3. **mise + yq already installed** (bootstrap does **not** install them)
+4. Run bootstrap from a directory that contains `mise.toml` (e.g. the project root)
+
+### One-time tool setup
+
+```bash
+# As the admin user (not root)
+curl https://mise.run | sh
+cd /path/to/hermes-self-hosted   # directory with mise.toml
+mise install                     # installs pinned yq
+```
 
 Copy the example and edit values (do **not** commit real keys):
 
@@ -27,17 +36,18 @@ cp config/bootstrap.example.yaml ./bootstrap.yaml
 ## Usage
 
 ```bash
+cd /path/to/hermes-self-hosted
+
 # Inject any config path (recommended)
 sudo ./scripts/bootstrap.sh --config ./bootstrap.yaml
 sudo ./scripts/bootstrap.sh --config /etc/hermes/host.yaml
 
-# From a clone, with mise.toml in the current directory
-cd /path/to/hermes-self-hosted
-sudo ./scripts/bootstrap.sh --config config/bootstrap.yaml
-
 # Or place bootstrap.yaml next to bootstrap.sh and omit --config
-sudo ./bootstrap.sh
+sudo ./scripts/bootstrap.sh
 ```
+
+If config or mise/yq is missing, bootstrap exits immediately with a short error —
+before changing the host.
 
 Legacy flags (`--hostname`, `--timezone`, `--ssh-key`) and interactive prompts
 are removed. Put those values in the YAML config. Path names are not special —
@@ -47,8 +57,8 @@ only the file contents must validate.
 
 | Step | Description |
 |------|-------------|
-| Mise + yq | Ensures per-user mise and pinned yq (via `mise.toml`) |
-| Config load | Resolves, parses, and validates `bootstrap.yaml` |
+| Preflight | Resolves config; requires mise + yq (no tool installs) |
+| Config load | Parses and validates the YAML config |
 | System update | `apt update && apt upgrade` |
 | Essential packages | sudo, openssh-server, curl, wget, git, vim, ufw, unattended-upgrades, apt-listchanges, tree, nmap |
 | Hostname | From config |

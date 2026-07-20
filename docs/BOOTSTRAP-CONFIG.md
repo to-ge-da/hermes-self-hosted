@@ -110,24 +110,28 @@ Bootstrap uses mise to run `yq` for YAML parsing — avoiding the apt version of
 
 ### `mise.toml` in the working directory
 
-Bootstrap runs `mise install` and `mise exec` in the **current working directory**
-(`pwd` at invocation). Place a `mise.toml` there (the repo clone includes one at
-the project root):
+You install tools **once** yourself in the directory that has `mise.toml`
+(the repo clone includes one at the project root):
 
 ```toml
 [tools]
 yq = "4.53.3"
 ```
 
-Adding new tools (Node.js, Python, etc.) is as simple as appending a line.
+```bash
+curl https://mise.run | sh
+mise install
+```
+
+Bootstrap then runs `mise exec -- yq` from the **current working directory**
+(`pwd` at invocation). It does **not** install mise or run `mise install`.
 
 ### Bootstrap integration
 
-1. At script start, bootstrap checks if mise is installed for `$SUDO_USER`.
-2. If absent, it installs mise for `$SUDO_USER` (not system-wide).
-3. Bootstrap runs `mise install` in the current working directory to fetch pinned tools.
-4. All YAML parsing uses `mise exec -- yq eval ...` — no shell aliases or PATH tweaks needed.
-5. Bootstrap does **not** depend on `install-mise-system-wide.sh`. That script is optional
+1. Resolve config (`--config` or sibling `bootstrap.yaml`) — fail fast if missing.
+2. Require mise + yq already available for `$SUDO_USER` — fail fast if not.
+3. Parse YAML with `mise exec -- yq eval ...`.
+4. Bootstrap does **not** depend on `install-mise-system-wide.sh`. That script is optional
    and provided separately for environments that want all users to have mise in PATH.
 
 ### Why not apt yq?
@@ -247,6 +251,6 @@ Or place `bootstrap.yaml` next to the script and omit `--config`:
 sudo ./bootstrap.sh
 ```
 
-Ensure the working directory has a `mise.toml` (or run from a directory that does)
-so `mise install` can provide `yq`. Use `bootstrap.example.yaml` as a format
-template — it is not a required path.
+Run from a directory with `mise.toml` after you have already run `mise install`
+so `yq` is available. Use `bootstrap.example.yaml` as a format template — it is
+not a required path.
