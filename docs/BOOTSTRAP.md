@@ -26,6 +26,8 @@ cd /path/to/hermes-self-hosted   # directory with mise.toml
 mise install                     # installs pinned yq
 ```
 
+Full mise guide (system-wide activation, uninstall): [MISE.md](MISE.md).
+
 Copy the example and edit values (do **not** commit real keys):
 
 ```bash

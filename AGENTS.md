@@ -42,6 +42,6 @@ In this repo, **Hermes** means the agent product, its system user, and the insta
 
 ## Project Phases
 
-Bootstrap (`bootstrap.sh`) → Hardening (`hardening.sh`) → Hermes install (official installer) → Profiles (TBD).
+Mise tools (prerequisite) → Bootstrap (`bootstrap.sh`) → Hardening (`hardening.sh`) → Network → Hermes install (official installer) → Profiles (TBD).
 
-These phases describe the **self-hosted** instance path today.
+These phases describe the **self-hosted** instance path today. Full ordered path with links: [docs/INSTALLATION.md](docs/INSTALLATION.md).

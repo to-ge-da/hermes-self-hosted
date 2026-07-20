@@ -133,6 +133,7 @@ Bootstrap then runs `mise exec -- yq` from the **current working directory**
 3. Parse YAML with `mise exec -- yq eval ...`.
 4. Bootstrap does **not** depend on `install-mise-system-wide.sh`. That script is optional
    and provided separately for environments that want all users to have mise in PATH.
+   See [MISE.md](MISE.md) for system-wide activation and full uninstall.
 
 ### Why not apt yq?
 
