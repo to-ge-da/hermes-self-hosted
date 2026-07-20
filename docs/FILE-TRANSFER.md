@@ -26,7 +26,7 @@ Copy a single file (example: bootstrap config prepared on the workstation):
 scp ./bootstrap.yaml USER@HOST:~/repos/hermes-self-hosted/bootstrap.yaml
 ```
 
-Copy an SSH public key for the hermes user:
+Copy an SSH public key for the hermes user (generate keys first — see [SSH-KEYS.md](SSH-KEYS.md)):
 
 ```bash
 scp ~/.ssh/hermes_vbox.pub USER@HOST:~/.ssh/hermes_vbox.pub

@@ -33,7 +33,8 @@ cp config/bootstrap.example.yaml ./bootstrap.yaml
 # edit hostname, timezone, hermes.ssh_public_key (or ssh_public_key_file)
 ```
 
-If you prepare `bootstrap.yaml` (or an SSH public key) on your workstation, copy it
+Generate an SSH key for the hermes user — see [SSH-KEYS.md](SSH-KEYS.md).
+If you prepare `bootstrap.yaml` (or a `.pub` file) on your workstation, copy it
 to the host with `scp` or `rsync` — see [FILE-TRANSFER.md](FILE-TRANSFER.md).
 
 ## Usage
@@ -106,11 +107,28 @@ only the file contents must validate.
 
 ## After running
 
-Verify SSH access for both users before disconnecting:
+Verify SSH access for both users before disconnecting.
+
+Admin (whatever key/password you use for `$SUDO_USER`):
 
 ```bash
 ssh <admin>@<server-ip>
-ssh hermes@<server-ip>
 ```
+
+Hermes is **key-only** — use the private key that matches the public key in config:
+
+```bash
+ssh -i ~/.ssh/hermes_vbox hermes@<server-ip>
+```
+
+On the host, inspect the installed key with sudo (other users cannot read `/home/hermes`):
+
+```bash
+sudo cat /home/hermes/.ssh/authorized_keys
+sudo ssh-keygen -lf /home/hermes/.ssh/authorized_keys
+```
+
+If bootstrap skipped key install because `authorized_keys` already existed, remove it
+and re-run — see [SSH-KEYS.md](SSH-KEYS.md).
 
 Then proceed to [hardening](HARDENING.md).

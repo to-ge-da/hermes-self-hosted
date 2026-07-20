@@ -21,6 +21,7 @@ Run Hermes Agent 24/7 on dedicated hardware, with a clean, step-by-step document
 │   ├── BOOTSTRAP.md         # Initial system setup: users, SSH, base config
 │   ├── BOOTSTRAP-CONFIG.md  # Config schema, mise, state conventions
 │   ├── FILE-TRANSFER.md     # Copy files to the host (scp / rsync)
+│   ├── SSH-KEYS.md          # Generate SSH keys for the hermes user
 │   ├── HARDENING.md         # Server security hardening
 │   ├── NETWORK.md           # Static IP and DNS configuration
 │   ├── INSTALL-HERMES.md    # Hermes Agent installation guide

@@ -399,20 +399,23 @@ fi
 # ──────────────────────
 # 2. System update
 # ──────────────────────
+export DEBIAN_FRONTEND=noninteractive
+export APT_LISTCHANGES_FRONTEND=none
+
 log "Updating system packages..."
 if [[ -z "$(find /var/lib/apt/lists -maxdepth 0 -mmin -60 2>/dev/null)" ]]; then
-    apt update
+    apt -qq update
 else
     log "Package lists refreshed less than 60 min ago, skipping apt update."
 fi
-apt upgrade -y
-apt autoremove -y
+apt -qq upgrade -y
+apt -qq autoremove -y
 
 # ──────────────────────
 # 3. Essential packages
 # ──────────────────────
 log "Installing essential packages..."
-apt install -y \
+apt -qq install -y \
     sudo \
     openssh-server \
     curl \
@@ -445,7 +448,6 @@ fi
 # 5. Timezone (from config)
 # ──────────────────────
 log "Setting timezone: $TZ"
-export DEBIAN_FRONTEND=noninteractive
 timedatectl set-timezone "$TZ" 2>/dev/null || {
     ln -sf "/usr/share/zoneinfo/$TZ" /etc/localtime
     echo "$TZ" > /etc/timezone
@@ -488,7 +490,8 @@ fi
 log "Setting up SSH for $HERMES_USER..."
 
 if [[ -f "/home/$HERMES_USER/.ssh/authorized_keys" ]] && [[ -s "/home/$HERMES_USER/.ssh/authorized_keys" ]]; then
-    warn "authorized_keys already exists, skipping. Remove manually if you want to replace."
+    warn "authorized_keys already exists and is non-empty — not replacing."
+    warn "To install the key from config: sudo rm /home/$HERMES_USER/.ssh/authorized_keys && re-run bootstrap."
 else
     mkdir -p "/home/$HERMES_USER/.ssh"
     chmod 700 "/home/$HERMES_USER/.ssh"
@@ -497,10 +500,14 @@ else
         echo "$HERMES_SSH_KEY" > "/home/$HERMES_USER/.ssh/authorized_keys"
         chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
         chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
+        local_fp="$(ssh-keygen -lf "/home/$HERMES_USER/.ssh/authorized_keys" 2>/dev/null | awk '{print $1,$2,$4}' || true)"
         log "SSH key added for $HERMES_USER (from config)."
+        if [[ -n "$local_fp" ]]; then
+            log "authorized_keys fingerprint: $local_fp"
+        fi
     else
         warn "No SSH key in config for $HERMES_USER. Skipping key setup."
-        warn "Add a key later:"
+        warn "Generate a key (see docs/SSH-KEYS.md), then add it to config and re-run, or:"
         warn "  echo 'ssh-ed25519 AAAA...' | sudo tee /home/$HERMES_USER/.ssh/authorized_keys"
         touch "/home/$HERMES_USER/.ssh/authorized_keys"
         chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
