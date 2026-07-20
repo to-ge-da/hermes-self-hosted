@@ -1,45 +1,25 @@
 # hermes-self-hosted — Development Guide
 
-Guides Hermes and OpenCode on workflow and conventions for this repository.
+Conventions for humans and Cursor working in this repository.
 
 ## Project Overview
 
-**Repo:** `to-ge-da/hermes-self-hosted` — Deploy Hermes Agent on Debian.  
-**Stack:** Bash scripts + Hermes Agent (via official installer).
+**Repo:** `to-ge-da/hermes-self-hosted`
 
-## Team Roles
+Scripts and docs to prepare a Debian host and install one Hermes Agent instance
+(bootstrap, hardening, then the official Hermes installer).
 
-| Role | Tool | What they do |
-|---|---|---|
-| **Architect / Coordinator** | Hermes | Design, planning, issue creation, code review, PR management |
-| **Executor** | OpenCode CLI | Local coding, testing, pushing code |
-
-## Labels
-
-| Label | Purpose |
+| Target | Status |
 |---|---|
-| `hermes` | Architect/coordinator work — planning, design, review |
-| `opencode` | Executor work — coding, testing, PRs |
+| Self-hosted (local machine or local VM) | Documented and supported |
+| VPS | Not covered yet |
+| Amazon EC2 | Not covered yet |
 
-Issue type labels (`bug`, `enhancement`, `documentation`) coexist with team labels.
+Single instance per host today. Multi-instance is not supported.
 
-## Workflow (Issue → Code → PR)
+**Stack:** Bash scripts + Hermes Agent (official installer). Models via external API (OpenRouter); local inference TBD.
 
-```
-ISSUE created by Hermes (describes the task, gets `hermes` label)
-    ↓
-BRANCH created by executor: feat/description, fix/description, or chore/description
-    ↓
-CODE written and tested locally
-    ↓
-COMMIT with Conventional Commits message
-    ↓
-PR opened against main (gets `opencode` label if tracking executor work)
-    ↓
-HERMES reviews the PR
-   ├── approved ──→ PR merged (squash) → branch deleted
-   └── changes requested ──→ CODE updated → back to COMMIT
-```
+In this repo, **Hermes** means the agent product, its system user, and the install target — not a GitHub workflow role.
 
 ## Git Conventions
 
@@ -47,7 +27,7 @@ HERMES reviews the PR
 - Branch from `main`: `feat/`, `fix/`, or `chore/` prefix
 - Conventional Commits (`feat:`, `fix:`, `docs:`, etc.)
 - Squash merge, delete branch after merge
-- **NEVER commit or push to main**
+- **NEVER commit or push to `main`**
 
 ## Code Standards
 
@@ -58,22 +38,10 @@ HERMES reviews the PR
 
 - Run `shellcheck` on all new/edited scripts
 - Test in a VM (VirtualBox) with a fresh Debian install
-- Run the full install flow to verify it completes without errors
-
-## Issue Type Guidance
-
-- **Task** (`task.md`) — default for any work with clear scope
-- **Feature** (`feature.md`) — new capability needing problem/solution/alternatives breakdown
-- **Bug** (`bug.md`) — unexpected behavior with reproduction steps
-
-## Issue Lifecycle
-
-Research → Discussion → Implementation → PR → Review → Merge.
-Not every issue needs all stages — simple tasks go straight to implementation.
+- Run the full install flow (self-hosted path) to verify it completes without errors
 
 ## Project Phases
 
 Bootstrap (`bootstrap.sh`) → Hardening (`hardening.sh`) → Hermes install (official installer) → Profiles (TBD).
 
-
-
+These phases describe the **self-hosted** instance path today.
