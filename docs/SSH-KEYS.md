@@ -4,7 +4,7 @@ The `hermes` agent user is **key-only** (password locked). Generate a key on you
 workstation, put the **public** key in bootstrap config, keep the **private** key
 on the workstation, and connect with `ssh -i`.
 
-See also: [BOOTSTRAP-CONFIG.md](BOOTSTRAP-CONFIG.md), [FILE-TRANSFER.md](FILE-TRANSFER.md).
+See also: [BOOTSTRAP.md](BOOTSTRAP.md), [FILE-TRANSFER.md](FILE-TRANSFER.md).
 
 ## Method 1 — Ed25519 (recommended)
 

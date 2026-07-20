@@ -21,13 +21,16 @@ This repository prepares a Debian host and installs **one** Hermes Agent instanc
 - **OS:** Debian Server
 - **Models:** External API (OpenRouter) — local inference TBD
 
+## Hermes Agent docs
+
+Official product documentation: [hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs)
+
 ## Docs
 
 | Doc | Topic |
 |---|---|
 | [INSTALLATION.md](docs/INSTALLATION.md) | Ordered self-hosted install path |
-| [BOOTSTRAP.md](docs/BOOTSTRAP.md) | Initial system setup |
-| [BOOTSTRAP-CONFIG.md](docs/BOOTSTRAP-CONFIG.md) | Bootstrap YAML schema and state |
+| [BOOTSTRAP.md](docs/BOOTSTRAP.md) | First-boot host setup (purpose, config, usage, state) |
 | [SSH-KEYS.md](docs/SSH-KEYS.md) | SSH keys for the hermes user |
 | [HARDENING.md](docs/HARDENING.md) | Security hardening |
 | [NETWORK.md](docs/NETWORK.md) | Static IP and DNS |

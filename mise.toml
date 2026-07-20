@@ -8,7 +8,7 @@
 # across the repo. Extend with Node, Python, or other runtimes as
 # needed by Hermes Agent in future phases.
 #
-# See also: docs/BOOTSTRAP-CONFIG.md (mise section)
+# See also: docs/BOOTSTRAP.md, docs/MISE.md
 
 [tools]
 yq = "4.53.3"
