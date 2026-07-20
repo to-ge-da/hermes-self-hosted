@@ -40,20 +40,6 @@ In this repo, **Hermes** means the agent product, its system user, and the insta
 - Test in a VM (VirtualBox) with a fresh Debian install
 - Run the full install flow (self-hosted path) to verify it completes without errors
 
-## Issue Type Guidance
-
-- **Task** (`task.md`) — scoped implementation work (docs, chores, refactors)
-- **Feature** (`feature.md`) — new capability needing problem/solution/alternatives
-- **Bug** (`bug.md`) — unexpected behavior with reproduction steps
-
-Use issue-type labels (`bug`, `enhancement`, `documentation`) as needed. There are no role labels.
-
-## Issue Lifecycle
-
-Research → Discussion → Implementation → PR → Review → Merge.
-
-Not every issue needs all stages — simple tasks can go straight to implementation.
-
 ## Project Phases
 
 Bootstrap (`bootstrap.sh`) → Hardening (`hardening.sh`) → Hermes install (official installer) → Profiles (TBD).
