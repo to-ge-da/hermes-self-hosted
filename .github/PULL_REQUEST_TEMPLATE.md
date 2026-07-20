@@ -10,9 +10,7 @@ Fixes #
 ## Changes Made
 
 <!-- List the specific changes -->
-- [ ] Change1
-- [ ] Change2
-- [ ] Change3
+-
 
 ## Type of Change
 
@@ -37,9 +35,8 @@ Fixes #
 - [ ] Conventional Commit messages used
 - [ ] No hardcoded admin usernames (using `$SUDO_USER` where applicable)
 - [ ] Scripts include `--help` flag
-- [ ] Scripts handle both interactive and non-interactive modes
+- [ ] Bootstrap/config scripts remain config-driven (`--config`, no interactive prompts)
 - [ ] Documentation updated (if applicable)
-- [ ] Labels applied (`hermes` for review, `opencode` for executor tracking)
 
 ## Review Notes
 

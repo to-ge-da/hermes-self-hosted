@@ -2,7 +2,7 @@
 name: Bug Report
 about: Report a problem or unexpected behavior
 title: "fix: description of the bug"
-labels: ["bug", "hermes"]
+labels: ["bug"]
 assignees: []
 ---
 
@@ -12,10 +12,9 @@ assignees: []
 
 ## Steps to Reproduce
 
-<!-- List the exact steps to trigger the bug -->
-1. Step1
-2. Step2
-3. Step3
+1. Step 1
+2. Step 2
+3. Step 3
 
 ## Expected Behavior
 
@@ -24,6 +23,12 @@ assignees: []
 ## Actual Behavior
 
 <!-- What actually happened? Include error messages if applicable -->
+
+## Deployment
+
+<!-- Optional but helpful -->
+- Target: self-hosted (local machine / local VM) — only path documented today
+- Notes: <!-- e.g. fresh install vs existing host -->
 
 ## Environment
 
@@ -37,11 +42,6 @@ assignees: []
 
 <!-- Paste relevant command output or screenshots -->
 
-## Files Likely Affected
-
-<!-- List files that may need modification -->
-- [ ] `path/to/file.sh`
-
 ## Acceptance Criteria
 
 - [ ] Bug is reproducible and confirmed
@@ -49,18 +49,9 @@ assignees: []
 - [ ] Fix is implemented and tested
 - [ ] Regression test added (if applicable)
 
-## Lifecycle
+## Files Likely Affected
 
-```
-Issue Created → Branch: fix/...
-       ↓
-    Code & Test
-       ↓
-  Commit & Push
-       ↓
-    Open PR
-       ↓
-  Hermes Reviews
-       ↓
-PR Merged → Branch Deleted
-```
+<!-- Optional. -->
+- `path/to/file.sh`
+
+Workflow: see [AGENTS.md](../../AGENTS.md).

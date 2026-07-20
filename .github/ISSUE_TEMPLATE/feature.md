@@ -1,8 +1,8 @@
 ---
 name: Feature Request
-about: Suggest a new feature or enhancement
+about: Propose a new capability or enhancement (problem and solution)
 title: "feat: description of the feature"
-labels: ["enhancement", "hermes"]
+labels: ["enhancement"]
 assignees: []
 ---
 
@@ -24,7 +24,7 @@ assignees: []
 
 ## Additional Context
 
-<!-- Any screenshots, diagrams, or references -->
+<!-- Screenshots, diagrams, or references -->
 
 ## Implementation Notes
 
@@ -33,23 +33,15 @@ assignees: []
 ## Acceptance Criteria
 
 <!-- Specific, testable criteria for "done" -->
-- [ ] Criterion1
-- [ ] Criterion2
-- [ ] Criterion3
-
-## Lifecycle
-
-```
-Research (if needed) → Discussion → Implementation Issue → PR → Merge
-```
-
-1. **Research** — Investigate options, document findings (if approach is unclear)
-2. **Discussion** — Decide on approach based on research output
-3. **Implementation** — Code the agreed solution
-4. **Review & Merge** — Standard PR workflow
+- [ ] Criterion 1
+- [ ] Criterion 2
 
 ## Files Likely Affected
 
-<!-- List files that will likely be modified -->
-- [ ] `path/to/file.sh`
-- [ ] `docs/documentation.md`
+<!-- Optional. -->
+- `path/to/file.sh`
+- `docs/documentation.md`
+
+Use **Feature** for new capability proposals. Use **Task** for scoped implementation work once the approach is clear.
+
+Workflow: see [AGENTS.md](../../AGENTS.md).

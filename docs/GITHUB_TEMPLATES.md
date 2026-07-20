@@ -4,39 +4,39 @@ This document explains the GitHub templates used in this repository to standardi
 
 ## Overview
 
-Templates ensure consistent information is provided when:
+Templates ensure consistent information when:
+
 - Reporting bugs
-- Requesting features 
-- Describing general tasks
+- Proposing features
+- Describing scoped tasks
 - Submitting pull requests
 
 ## Issue Templates
 
-### 🐛 Bug Report
+### Bug Report
+
 **File:** `.github/ISSUE_TEMPLATE/bug.md`
 
-Use when:
-- Something is not working as expected
-- You encountered an error
-- There is unexpected behavior
+Use when something is not working as expected.
 
 Sections include:
+
 - Bug description
 - Steps to reproduce
 - Expected vs actual behavior
+- Deployment context (optional; self-hosted today)
 - Environment details (OS, kernel, shell, mise version)
 - Logs/screenshots
-- Acceptance criteria for resolution
+- Acceptance criteria
 
-### ✨ Feature Request
+### Feature Request
+
 **File:** `.github/ISSUE_TEMPLATE/feature.md`
 
-Use when:
-- Proposing a new feature
-- Suggesting an improvement
-- Requesting new functionality
+Use when proposing a new capability or enhancement.
 
 Sections include:
+
 - Summary
 - Problem statement
 - Proposed solution
@@ -44,30 +44,35 @@ Sections include:
 - Additional context
 - Acceptance criteria
 
-### 📋 Task
+### Task
+
 **File:** `.github/ISSUE_TEMPLATE/task.md`
 
-Use for:
-- General work items
-- Refactoring
+Use for scoped implementation work:
+
 - Documentation updates
 - Chores/maintenance
+- Refactors
+- Follow-up coding once an approach is clear
 
 Sections include:
+
 - Summary and context
 - Requirements checklist
 - Acceptance criteria
-- Proposed approach
-- Lifecycle workflow diagram
+- Proposed approach (optional)
+
+Prefer **Feature** for open-ended capability proposals; prefer **Task** when the work is already scoped.
 
 ## Pull Request Template
 
 **File:** `.github/PULL_REQUEST_TEMPLATE.md`
 
 Automatically appears when opening a PR. Includes:
+
 - Summary of changes
 - Related issues (auto-closes on merge)
-- Changes checklist
+- Changes list
 - Type of change (feat/fix/docs/refactor/chore/test)
 - Testing checklist
 - Compliance checklist
@@ -76,36 +81,32 @@ Automatically appears when opening a PR. Includes:
 
 ## Best Practices
 
-1. **Choose the right template** - Don't use bug template for features
-2. **Fill all sections** - Empty sections should be deleted or filled
-3. **Be specific** - Vague descriptions delay review
-4. **Reference issues** - Link related issues in PRs
-5. **Check the boxes** - Actually verify checklist items
+1. Choose the right template
+2. Fill or delete empty sections
+3. Be specific — vague descriptions delay review
+4. Reference related issues in PRs
+5. Actually verify checklist items
 
 ## Workflow Integration
 
-Per [AGENTS.md](../AGENTS.md), the workflow is:
+Per [AGENTS.md](../AGENTS.md):
 
 ```
 Issue Created (using template)
     ↓
-Branch: feat/... or fix/...
+Branch: feat/... or fix/... or chore/...
     ↓
 Code & Test
     ↓
 PR Created (template auto-filled)
     ↓
-Hermes Reviews (against checklist)
+Review
     ↓
 Merge & Close
 ```
 
 ## Maintenance
 
-These templates are living documents. Update them when:
-- New project conventions are adopted
-- Common information is missing from issues
-- Review process changes
-- New types of work emerge
+Update these templates when project conventions change, common information is missing, or the review process changes.
 
-To update: edit the files in `.github/ISSUE_TEMPLATE/` and `.github/PULL_REQUEST_TEMPLATE.md`, then open a PR.
+Edit files under `.github/ISSUE_TEMPLATE/` and `.github/PULL_REQUEST_TEMPLATE.md`, then open a PR.
