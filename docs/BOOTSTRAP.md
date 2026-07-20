@@ -237,3 +237,5 @@ Or place `bootstrap.yaml` next to the script. Run from a directory with `mise.to
 - [SSH-KEYS.md](SSH-KEYS.md) — generate keys for the hermes user  
 - [FILE-TRANSFER.md](FILE-TRANSFER.md) — copy config/keys to the host  
 - [HARDENING.md](HARDENING.md) — next step after bootstrap  
+- Official Hermes Agent docs: https://hermes-agent.nousresearch.com/docs  
+

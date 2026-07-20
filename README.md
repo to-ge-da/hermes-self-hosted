@@ -21,6 +21,10 @@ This repository prepares a Debian host and installs **one** Hermes Agent instanc
 - **OS:** Debian Server
 - **Models:** External API (OpenRouter) — local inference TBD
 
+## Hermes Agent docs
+
+Official product documentation: [hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs)
+
 ## Docs
 
 | Doc | Topic |
