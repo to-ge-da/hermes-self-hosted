@@ -21,19 +21,13 @@ This repository prepares a Debian host and installs **one** Hermes Agent instanc
 - **OS:** Debian Server
 - **Models:** External API (OpenRouter) — local inference TBD
 
-## Installation order (self-hosted)
-
-1. **[FILE-TRANSFER.md](docs/FILE-TRANSFER.md)** — Copy config/keys to the host (`scp` / `rsync`) as needed
-2. **[bootstrap.sh](scripts/bootstrap.sh)** — Config-driven system update, users, SSH keys, hostname (`--config`)
-3. **[hardening.sh](scripts/hardening.sh)** — Firewall, kernel, auditd, file permissions
-4. **[NETWORK.md](docs/NETWORK.md)** — Configure static IP and DNS
-5. **[INSTALL-HERMES.md](docs/INSTALL-HERMES.md)** — Install Hermes Agent and gateway
-6. **[MISE.md](docs/MISE.md)** — Mise tools, optional system-wide activation, uninstall
-
 ## Docs
+
+Ordered self-hosted path: [INSTALLATION.md](docs/INSTALLATION.md).
 
 | Doc | Topic |
 |---|---|
+| [INSTALLATION.md](docs/INSTALLATION.md) | Ordered self-hosted install path |
 | [BOOTSTRAP.md](docs/BOOTSTRAP.md) | Initial system setup |
 | [BOOTSTRAP-CONFIG.md](docs/BOOTSTRAP-CONFIG.md) | Bootstrap YAML schema and state |
 | [SSH-KEYS.md](docs/SSH-KEYS.md) | SSH keys for the hermes user |
@@ -50,6 +44,6 @@ Layout: `scripts/` (bootstrap, hardening, mise helpers), `config/` (example boot
 ## Contributing
 
 - Use the right issue template (Bug, Feature, or Task) — see [GITHUB_TEMPLATES.md](docs/GITHUB_TEMPLATES.md)
-- Follow the PR template checklist
+- Follow the PR template
 - Conventional Commits; branch from `main` as `feat/...`, `fix/...`, or `chore/...`
 - Full conventions: [AGENTS.md](AGENTS.md)

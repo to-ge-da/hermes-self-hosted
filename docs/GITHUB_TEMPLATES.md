@@ -71,13 +71,13 @@ Prefer **Feature** for open-ended capability proposals; prefer **Task** when the
 Automatically appears when opening a PR. Includes:
 
 - Summary of changes
-- Related issues (auto-closes on merge)
+- Related issues (auto-closes on merge when using `Fixes #`)
 - Changes list
 - Type of change (feat/fix/docs/refactor/chore/test)
-- Testing checklist
-- Compliance checklist
-- Review notes
-- Screenshots/output
+- How tested (freeform — what you ran, or “Docs only — no runtime test”)
+- Review notes (optional)
+
+Script conventions (`shellcheck`, `--help`, config-driven bootstrap) live in [AGENTS.md](../AGENTS.md); do not force them as PR checkboxes on every change.
 
 ## Best Practices
 
@@ -85,7 +85,7 @@ Automatically appears when opening a PR. Includes:
 2. Fill or delete empty sections
 3. Be specific — vague descriptions delay review
 4. Reference related issues in PRs
-5. Actually verify checklist items
+5. Describe what you actually tested under How tested
 
 ## Workflow Integration
 
