@@ -426,7 +426,12 @@ apt -qq install -y \
     unattended-upgrades \
     apt-listchanges \
     tree \
-    nmap
+    nmap \
+    build-essential \
+    python3-dev \
+    libffi-dev \
+    ripgrep \
+    ffmpeg
 
 # ──────────────────────
 # 4. Hostname (from config)

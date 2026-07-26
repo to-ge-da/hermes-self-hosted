@@ -192,6 +192,10 @@ If `/var/lib/hermes-self-hosted/bootstrap.state` exists, bootstrap migrates it t
 | `apt-listchanges` | Changelogs during upgrades |
 | `tree` | Directory listing |
 | `nmap` | Network scanner |
+| `build-essential`, `python3-dev`, `libffi-dev` | Hermes Agent Python build deps (unprivileged install) |
+| `ripgrep`, `ffmpeg` | Hermes Agent optional tools (fast search, TTS) |
+
+These last packages prepare the host for [INSTALL-HERMES.md](INSTALL-HERMES.md) so the official installer does not prompt the passwordless `hermes` user for `sudo`.
 
 ## Users after bootstrap
 

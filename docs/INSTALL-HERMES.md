@@ -4,33 +4,26 @@ Official installation of Hermes Agent on the server. Run as the unprivileged **h
 
 ## Prerequisites
 
-- [Bootstrap](BOOTSTRAP.md) completed (users created, SSH configured)
+- [Bootstrap](BOOTSTRAP.md) completed (users created, SSH configured) — installs Hermes system packages (`build-essential`, `python3-dev`, `libffi-dev`, `ripgrep`, `ffmpeg`)
 - [Hardening](HARDENING.md) completed (system secured) — recommended for production; VM smoke tests may skip
 - Server has internet access
-- **Admin system packages** installed before the hermes installer (see below)
 
-### Admin: install system packages first
+### System packages (from bootstrap)
 
-The official installer may prompt for `sudo` to install build tools and optional packages. The `hermes` user has **no password and no sudo**, so those prompts block or fail.
-
-Install them once as **admin** before running the hermes installer:
-
-```bash
-# as admin (not hermes)
-sudo apt install -y build-essential python3-dev libffi-dev ripgrep ffmpeg
-```
+[Bootstrap](BOOTSTRAP.md) installs the apt packages the official installer would otherwise try to add via `sudo`. The `hermes` user has **no password and no sudo**, so those prompts would block or fail.
 
 | Package set | Why | How the installer detects them |
 |-------------|-----|--------------------------------|
 | `build-essential`, `python3-dev`, `libffi-dev` | Compile some Python deps into the venv | `dpkg` checks for `gcc`, `python3-dev`, `libffi-dev` |
 | `ripgrep`, `ffmpeg` | Optional: fast file search + TTS | `rg` / `ffmpeg` on `PATH` |
 
-These packages are **not** installed by current `bootstrap.sh`. If the installer still asks:
+**Fallback** (hosts bootstrapped before this change, or if packages were removed) — as **admin**:
 
-- `Install ripgrep … ffmpeg …? [Y/n]`
-- `Install build tools? [Y/n]`
+```bash
+sudo apt install -y build-essential python3-dev libffi-dev ripgrep ffmpeg
+```
 
-answer **`n`** as hermes (do not enter a sudo password). If stuck at `[sudo] password for hermes:`, press Ctrl+C or let sudo fail, install the packages as admin, then re-run the installer if the venv/deps step failed.
+If the installer still asks `Install ripgrep … ffmpeg …?` or `Install build tools?`, answer **`n`** as hermes (do not enter a sudo password). If stuck at `[sudo] password for hermes:`, press Ctrl+C or let sudo fail, install the packages as admin, then re-run the installer if the venv/deps step failed.
 
 ## Installation
 
