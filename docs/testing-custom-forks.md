@@ -65,7 +65,8 @@ uv run hermes doctor
 
 Tip: prefix every command below with `uv run` (for example `uv run hermes model`),
 or activate the project venv once (`source .venv/bin/activate`) and call `hermes`
-directly.
+directly. To use bare `hermes` from any directory, create the symlink in
+[Make Hermes available globally](#7-make-hermes-available-globally) (recommended).
 
 ## 3. Set up auth
 
@@ -149,24 +150,28 @@ uv run hermes chat -q "Reply with: cursor ok"
 ## 7. Make Hermes available globally
 
 By default, `hermes` only works with `uv run hermes ...` inside the fork
-directory. To run `hermes` from any path:
+directory. Prefer a symlink so bare `hermes` works from any path immediately.
 
-### Option A: Install the fork in editable mode (recommended)
-
-```bash
-cd ~/projects/hermes-agent
-uv pip install -e .
-```
-
-This registers `hermes` at `~/.local/bin/hermes` pointing to your fork.
-Any code changes you make are reflected automatically — you do not need
-to reinstall.
-
-### Option B: Manual symlink
+### Option A: Symlink (recommended)
 
 ```bash
 ln -sf ~/projects/hermes-agent/.venv/bin/hermes ~/.local/bin/hermes
 ```
+
+Ensure `~/.local/bin` is on your `PATH`. This makes `hermes` available
+immediately from any directory.
+
+> **Note — editable install:** `uv pip install -e .` installs the Python
+> package but does **not** put `hermes` on your `PATH`. Prefer the symlink
+> above. If you still want an editable install for local development:
+>
+> ```bash
+> cd ~/projects/hermes-agent
+> uv pip install -e .
+> ```
+>
+> Then add the symlink (Option A) so the `hermes` command is globally
+> available. Code changes under the fork are picked up without reinstalling.
 
 ### Option C: Shell alias
 
@@ -178,7 +183,7 @@ source ~/.zshrc
 ### Verify
 
 ```bash
-which hermes          # ~/.local/bin/hermes (options A/B)
+which hermes          # ~/.local/bin/hermes (option A)
 hermes model          # works from any directory
 ```
 
@@ -190,7 +195,7 @@ hermes model          # works from any directory
 | `ModuleNotFoundError` / missing deps | Re-run `uv sync` from the fork root. If extras are required: `uv sync --all-extras` (or install `[all,dev]` per the fork’s CONTRIBUTING). |
 | `CURSOR_API_KEY` / auth errors | Key missing or truncated in `~/.hermes/.env`; export not loaded. Re-add the key; restart the shell; avoid quoting spaces incorrectly. |
 | `401` / unauthorized on `hermes cursor me` | Invalid or revoked API key; subscription tier without API access. Create a new key under a Pro+ account. |
-| `hermes: command not found` | Use `uv run hermes ...` from the clone, or activate `.venv`. |
+| `hermes: command not found` | Use `uv run hermes ...` from the clone, activate `.venv`, or create the recommended symlink (section 7, Option A). |
 | Python / wheel build failures | Need Python 3.11–3.13 (`uv python install 3.12` then `uv sync`). |
 | Official `hermes` shadows the fork | `which hermes` may point at `~/.local/bin` from the installer. Prefer `uv run hermes` from the clone while testing. |
 
