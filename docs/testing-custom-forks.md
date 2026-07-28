@@ -35,7 +35,7 @@ and keep it ready for the auth step below.
 ## 1. Clone the fork
 
 ```bash
-# Shallow clone (recomendado — repo grande ~2 GB)
+# Shallow clone (recommended — large repo ~2 GB)
 gh repo clone to-ge-da/hermes-agent -- --depth 1
 cd hermes-agent
 ```
@@ -146,40 +146,40 @@ composer-2.5), then:
 uv run hermes chat -q "Reply with: cursor ok"
 ```
 
-## 5. Tornar o Hermes acessível globalmente
+## 7. Make Hermes available globally
 
-Por defeito, `hermes` só funciona com `uv run hermes ...` dentro do diretório
-do fork. Para correr `hermes` de qualquer path:
+By default, `hermes` only works with `uv run hermes ...` inside the fork
+directory. To run `hermes` from any path:
 
-### Opção A: Instalar o fork em modo editable (recomendado)
+### Option A: Install the fork in editable mode (recommended)
 
 ```bash
 cd ~/projects/hermes-agent
 uv pip install -e .
 ```
 
-Isto regista o `hermes` em `~/.local/bin/hermes` apontando para o teu fork.
-Qualquer alteração que faças no código reflete automaticamente — não precisas
-de reinstalar.
+This registers `hermes` at `~/.local/bin/hermes` pointing to your fork.
+Any code changes you make are reflected automatically — you do not need
+to reinstall.
 
-### Opção B: Symlink manual
+### Option B: Manual symlink
 
 ```bash
 ln -sf ~/projects/hermes-agent/.venv/bin/hermes ~/.local/bin/hermes
 ```
 
-### Opção C: Alias no shell
+### Option C: Shell alias
 
 ```bash
 echo 'alias hermes="cd ~/projects/hermes-agent && uv run hermes"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-### Verificar
+### Verify
 
 ```bash
-which hermes          # ~/.local/bin/hermes (opções A/B)
-hermes model          # funciona de qualquer diretório
+which hermes          # ~/.local/bin/hermes (options A/B)
+hermes model          # works from any directory
 ```
 
 ## Troubleshooting
