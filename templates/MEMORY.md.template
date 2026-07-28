@@ -1,0 +1,17 @@
+<!-- Template: copy to ~/.hermes/MEMORY.md and fill in the placeholders. -->
+
+# Agent Notes (Memory)
+
+Key facts about the user's environment and preferences.
+
+## Environment
+- Host: <OS>
+- Shell: <shell>
+- Package manager: <tools>
+- Working directory: <path>
+
+## Tool Preferences
+- Version control: git + gh CLI
+- Python: uv + venv
+- Rust: cargo + rustup
+- etc.
