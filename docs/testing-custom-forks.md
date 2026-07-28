@@ -146,6 +146,42 @@ composer-2.5), then:
 uv run hermes chat -q "Reply with: cursor ok"
 ```
 
+## 5. Tornar o Hermes acessível globalmente
+
+Por defeito, `hermes` só funciona com `uv run hermes ...` dentro do diretório
+do fork. Para correr `hermes` de qualquer path:
+
+### Opção A: Instalar o fork em modo editable (recomendado)
+
+```bash
+cd ~/projects/hermes-agent
+uv pip install -e .
+```
+
+Isto regista o `hermes` em `~/.local/bin/hermes` apontando para o teu fork.
+Qualquer alteração que faças no código reflete automaticamente — não precisas
+de reinstalar.
+
+### Opção B: Symlink manual
+
+```bash
+ln -sf ~/projects/hermes-agent/.venv/bin/hermes ~/.local/bin/hermes
+```
+
+### Opção C: Alias no shell
+
+```bash
+echo 'alias hermes="cd ~/projects/hermes-agent && uv run hermes"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### Verificar
+
+```bash
+which hermes          # ~/.local/bin/hermes (opções A/B)
+hermes model          # funciona de qualquer diretório
+```
+
 ## Troubleshooting
 
 | Symptom | What to check |
