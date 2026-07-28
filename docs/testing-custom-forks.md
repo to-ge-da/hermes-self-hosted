@@ -35,7 +35,8 @@ and keep it ready for the auth step below.
 ## 1. Clone the fork
 
 ```bash
-gh repo clone to-ge-da/hermes-agent
+# Shallow clone (recomendado — repo grande ~2 GB)
+gh repo clone to-ge-da/hermes-agent -- --depth 1
 cd hermes-agent
 ```
 
