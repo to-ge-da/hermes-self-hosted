@@ -27,3 +27,4 @@ This page is a map of steps and links. Each linked guide has the full procedure.
 
 - Deployment targets and limits: [README.md](../README.md)
 - Project phases summary: [AGENTS.md](../AGENTS.md)
+- Test a custom Hermes fork with Cursor: [testing-custom-forks.md](testing-custom-forks.md)
