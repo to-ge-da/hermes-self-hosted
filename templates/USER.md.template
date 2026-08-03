@@ -1,0 +1,17 @@
+<!-- Template: copy to ~/.hermes/USER.md and fill in the placeholders. -->
+
+# User Profile
+
+- Primary language: <language>
+- Secondary language: <language>
+- Communication preferences: <style>
+
+## Preferred Tools
+- AI coding assistant: <tool>
+- Favorite models: <list>
+- Environment: <setup>
+
+## Conventions
+- Documentation: <language>
+- Code comments: <language>
+- Chat: <language>

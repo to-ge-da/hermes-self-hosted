@@ -36,9 +36,10 @@ This repository prepares a Debian host and installs **one** Hermes Agent instanc
 | [FILE-TRANSFER.md](docs/FILE-TRANSFER.md) | Copy files to the host |
 | [MISE.md](docs/MISE.md) | Mise tools, system-wide activation, uninstall |
 | [GITHUB_TEMPLATES.md](docs/GITHUB_TEMPLATES.md) | Issue and PR templates |
+| [profile-templates.md](docs/profile-templates.md) | Hermes USER.md / MEMORY.md starters |
 | [AGENTS.md](AGENTS.md) | Development conventions (humans + Cursor) |
 
-Layout: `scripts/` (bootstrap, hardening, mise helpers), `config/` (example bootstrap YAML), `docs/`.
+Layout: `scripts/` (bootstrap, hardening, mise helpers), `config/` (example bootstrap YAML), `templates/` (Hermes profile starters), `docs/`.
 
 ## Contributing
 
