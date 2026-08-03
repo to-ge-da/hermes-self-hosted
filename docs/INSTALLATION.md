@@ -23,11 +23,10 @@ This page is a map of steps and links. Each linked guide has the full procedure.
 6. **Install Hermes Agent** — Non-interactive official installer as the `hermes` user (admin apt packages first). See [INSTALL-HERMES.md](INSTALL-HERMES.md).
 7. **Optional: system-wide mise** — Make mise tools available to all users on login. See [MISE.md](MISE.md) (system-wide section).
 
-To remove Hermes Agent later, see [hermes-uninstall.md](hermes-uninstall.md).
-
 ## Related
 
 - Deployment targets and limits: [README.md](../README.md)
 - Project phases summary: [AGENTS.md](../AGENTS.md)
 - Uninstall Hermes Agent: [hermes-uninstall.md](hermes-uninstall.md)
 - Test a custom Hermes fork with Cursor: [testing-custom-forks.md](testing-custom-forks.md)
+- Run the dashboard as a background service: [hermes-dashboard-service.md](hermes-dashboard-service.md)

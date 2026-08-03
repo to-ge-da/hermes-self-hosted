@@ -173,7 +173,7 @@ immediately from any directory.
 > Then add the symlink (Option A) so the `hermes` command is globally
 > available. Code changes under the fork are picked up without reinstalling.
 
-### Option C: Shell alias
+### Option B: Shell alias
 
 ```bash
 echo 'alias hermes="cd ~/projects/hermes-agent && uv run hermes"' >> ~/.zshrc

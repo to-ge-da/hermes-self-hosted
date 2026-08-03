@@ -172,7 +172,7 @@ Store the archive **outside** `~/.hermes` (for example `~/` or another disk).
 
 ### Restore (after reinstall)
 
-1. Reinstall Hermes (Step 9 / [INSTALL-HERMES.md](INSTALL-HERMES.md)).
+1. Reinstall Hermes ([INSTALL-HERMES.md](INSTALL-HERMES.md)).
 2. Restore data:
 
 ```bash
