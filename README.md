@@ -31,12 +31,17 @@ This repository prepares a Debian host and installs **one** Hermes Agent instanc
 | [HARDENING.md](docs/HARDENING.md) | Security hardening |
 | [NETWORK.md](docs/NETWORK.md) | Static IP and DNS |
 | [INSTALL-HERMES.md](docs/INSTALL-HERMES.md) | Hermes Agent install |
+| [hermes-uninstall.md](docs/hermes-uninstall.md) | Completely remove Hermes Agent |
+| [testing-custom-forks.md](docs/testing-custom-forks.md) | Test a custom Hermes fork with Cursor |
 | [FILE-TRANSFER.md](docs/FILE-TRANSFER.md) | Copy files to the host |
 | [MISE.md](docs/MISE.md) | Mise tools, system-wide activation, uninstall |
 | [GITHUB_TEMPLATES.md](docs/GITHUB_TEMPLATES.md) | Issue and PR templates |
+| [profile-templates.md](docs/profile-templates.md) | Hermes USER.md / MEMORY.md starters |
+| [hermes-dashboard-service.md](docs/hermes-dashboard-service.md) | Run the web dashboard as a background service |
+| [cursor-integration-research.md](docs/cursor-integration-research.md) | Research: Cursor–Hermes integration options |
 | [AGENTS.md](AGENTS.md) | Development conventions (humans + Cursor) |
 
-Layout: `scripts/` (bootstrap, hardening, mise helpers), `config/` (example bootstrap YAML), `docs/`.
+Layout: `scripts/` (bootstrap, hardening, mise helpers), `config/` (example bootstrap YAML), `templates/` (Hermes profile starters), `docs/`.
 
 ## Contributing
 
