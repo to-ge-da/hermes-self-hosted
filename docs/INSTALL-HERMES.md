@@ -157,8 +157,14 @@ and extend it with:
 - Pre-loaded skills for the target environment
 - Config file templating
 
+## Uninstall
+
+To stop the gateway and remove the agent, config, and data, see
+[hermes-uninstall.md](hermes-uninstall.md).
+
 ## Reference
 
 - Official docs: https://hermes-agent.nousresearch.com/docs/
 - CLI reference: https://hermes-agent.nousresearch.com/docs/reference/cli-commands
 - Gateway setup: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/
+- Updating & uninstalling: https://hermes-agent.nousresearch.com/docs/getting-started/updating
