@@ -30,3 +30,4 @@ To remove Hermes Agent later, see [hermes-uninstall.md](hermes-uninstall.md).
 - Deployment targets and limits: [README.md](../README.md)
 - Project phases summary: [AGENTS.md](../AGENTS.md)
 - Uninstall Hermes Agent: [hermes-uninstall.md](hermes-uninstall.md)
+- Test a custom Hermes fork with Cursor: [testing-custom-forks.md](testing-custom-forks.md)
