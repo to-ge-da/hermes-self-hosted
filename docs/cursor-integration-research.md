@@ -1,7 +1,23 @@
 # Cursor Integration Research — Community PR Analysis
 
-**Date:** 2026-07-28
+**Date:** 2026-07-28  
 **Scope:** 4 community PRs that attempted to integrate Cursor into Hermes Agent.
+
+> **Status 2026-08-19.** This page is the July research snapshot. Do not treat
+> lawmight#1 as the tree to grow.
+>
+> - New instances: [`to-ge-da/hermes-agent-sdk`](https://github.com/to-ge-da/hermes-agent-sdk)
+>   — latest Nous `main` + [Nous #88212](https://github.com/NousResearch/hermes-agent/pull/88212)
+>   (Hermes stays the harness; `cursor-sdk` only infers).
+> - Legacy instance: [`to-ge-da/hermes-agent`](https://github.com/to-ge-da/hermes-agent)
+>   — v0.19.0 + lawmight `cursor_agent` runtime. Frozen except meter/recycle
+>   hotfixes.
+> - How to install, isolate, and update both:
+>   [testing-custom-forks.md](testing-custom-forks.md).
+>
+> #88212 is the same *goal* as lawmight#1, not the same git history. Nous still
+> has it `needs-decision` and conflicting. The sdk repo exists because an org
+> can only **fork** Nous once.
 
 ---
 

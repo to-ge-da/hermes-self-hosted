@@ -1,253 +1,276 @@
-# Testing Custom Hermes Forks (Cursor)
+# Working with Hermes + Cursor trees
 
-Step-by-step guide to clone, install from source, and test the
-[`to-ge-da/hermes-agent`](https://github.com/to-ge-da/hermes-agent) fork with
-native Cursor provider integration.
+Official Hermes (Nous) still has **no in-tree Cursor provider**. Until that
+lands, `to-ge-da` keeps **two** trees. This guide is how to pick one, install
+it, isolate it, and update it.
 
-This path is for **local development / smoke testing**. For the official
-release install on a hardened host, see [INSTALL-HERMES.md](INSTALL-HERMES.md).
+Official host install (no Cursor): [INSTALL-HERMES.md](INSTALL-HERMES.md).  
+Why Cursor is forked at all: [cursor-integration-research.md](cursor-integration-research.md)
+(July 2026 research — read the status box at the top before the tables).
 
-## Prerequisites
+## Which tree
+
+| Repo | GitHub kind | Hermes base | Cursor’s role | Use |
+|---|---|---|---|---|
+| [to-ge-da/hermes-agent](https://github.com/to-ge-da/hermes-agent) | **Fork** of `NousResearch/hermes-agent` | Frozen ~v0.19.0 (Jul 2026) + lawmight runtime | Cursor **drives** the turn (`api_mode=cursor_agent`) | Legacy instance already running this checkout |
+| [to-ge-da/hermes-agent-sdk](https://github.com/to-ge-da/hermes-agent-sdk) | Regular repo (**not** a fork) | Latest Nous `main` + [Nous #88212](https://github.com/NousResearch/hermes-agent/pull/88212) | Hermes stays the harness; `cursor-sdk` only infers | **New instances** — best Hermes + Cursor token spend |
+| [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) | Upstream | Latest | No native Cursor | Default path in [INSTALL-HERMES.md](INSTALL-HERMES.md) |
+
+`hermes-agent-sdk` is the line that moves. `hermes-agent` stays frozen except
+Cursor-runtime hotfixes (meter, recycle). Do not rebase the legacy tree onto
+Nous `main` unless you intend a full rewrite.
+
+When Nous merges a native Cursor provider, sync `hermes-agent-sdk` to
+upstream and retire the extra commits. The legacy fork can be archived.
+
+## GitHub constraint
+
+An org can **fork** a given upstream **once**. `to-ge-da/hermes-agent` already
+is that fork. A second tree **must** be a normal repo (`gh repo create`), then
+push Nous `main` + the Cursor patch. You lose the GitHub “Contribute / Compare”
+button to Nous; keep an `upstream` remote in git instead.
+
+```bash
+# inside hermes-agent-sdk
+git remote -v
+# origin   = to-ge-da/hermes-agent-sdk
+# upstream = NousResearch/hermes-agent
+```
+
+Do **not** run `gh repo fork NousResearch/hermes-agent` again.
+
+## Isolation rules
+
+This repo still documents **one Hermes instance per host**.
+
+| Do | Do not |
+|---|---|
+| New tree → **new host** (or new VM) | Share `~/.hermes` between trees |
+| Own `HERMES_HOME` + own `~/.local/bin/hermes` | `hermes update` on a fork and expect Nous `main` |
+| `CURSOR_API_KEY` in that instance’s `.env` | Point both trees at the same venv / symlink |
+
+Same machine (unsupported here, last resort):
+
+```bash
+# example — separate data + code dirs
+export HERMES_HOME="$HOME/.hermes-sdk"
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- \
+  --dir "$HOME/src/hermes-agent-sdk" \
+  --hermes-home "$HERMES_HOME" \
+  --skip-setup --non-interactive
+```
+
+Prefer a second host. Two `hermes` binaries on one `PATH` will shadow each other.
+
+## Prerequisites (any custom tree)
 
 | Tool | Why |
 |---|---|
-| [mise](https://mise.jdx.dev/) | Optional but recommended for pinned host tools in this repo — see [MISE.md](MISE.md) |
-| [uv](https://docs.astral.sh/uv/) | Python package manager used to sync and run the fork |
-| [GitHub CLI](https://cli.github.com/) (`gh`) | Clone the fork with auth |
-| Cursor Pro+ subscription | Required for Cursor API access / `CURSOR_API_KEY` |
-
-Install `uv` if needed:
+| [mise](https://mise.jdx.dev/) | Optional; pinned host tools in this repo — [MISE.md](MISE.md) |
+| [uv](https://docs.astral.sh/uv/) | Sync and run a source checkout |
+| [GitHub CLI](https://cli.github.com/) (`gh`) | Clone with auth |
+| Cursor Pro+ | Dashboard key (`crsr_…` / `CURSOR_API_KEY`) |
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Confirm:
-
-```bash
 uv --version
 gh --version
 ```
 
-Create a Cursor API key in the Cursor dashboard (Settings → API Keys / Integrations)
-and keep it ready for the auth step below.
+Create the key at [Cursor Dashboard → API](https://cursor.com/dashboard/api)
+(or Integrations). Do not commit it.
 
-## 1. Clone the fork
+## Install from source
 
-```bash
-# Shallow clone (recommended — large repo ~2 GB)
-gh repo clone to-ge-da/hermes-agent -- --depth 1
-cd hermes-agent
-```
+Pick **one** clone. Shallow clone is fine for a smoke test (~2 GB full).
 
-Optional: check out a specific Cursor feature branch if the fork documents one:
+### A. New instance — `hermes-agent-sdk` (preferred)
 
 ```bash
-git fetch origin
-git branch -a | grep -i cursor
-# git checkout <branch>
-```
-
-## 2. Install from source
-
-From the repo root:
-
-```bash
+gh repo clone to-ge-da/hermes-agent-sdk -- --depth 1
+cd hermes-agent-sdk
+# default branch `main` is already Nous tip + #88212
 uv sync
-```
-
-Smoke-check the CLI via the project environment:
-
-```bash
 uv run hermes --version
 uv run hermes doctor
 ```
 
-Tip: prefix every command below with `uv run` (for example `uv run hermes model`),
-or activate the project venv once (`source .venv/bin/activate`) and call `hermes`
-directly. To use bare `hermes` from any directory, create the symlink in
-[Make Hermes available globally](#7-make-hermes-available-globally) (recommended).
+Expected: a current Hermes version (not `v0.19.0`), provider `cursor` in
+`hermes model`.
 
-## 3. Set up auth
+### B. Legacy — `hermes-agent`
 
-Hermes loads provider keys from `~/.hermes/.env`:
+```bash
+gh repo clone to-ge-da/hermes-agent -- --depth 1
+cd hermes-agent
+git fetch origin
+git branch -a | grep -i cursor
+# typical tips:
+#   feat/cursor-native-integration
+#   fix/cursor-context-meter-and-recycle   # 500K meter + session recycle
+git checkout fix/cursor-context-meter-and-recycle   # if you need the meter fix
+uv sync
+uv run hermes --version
+# expect: Hermes Agent v0.19.0 … local <sha> (+N carried commits)
+```
+
+### Auth (both)
 
 ```bash
 mkdir -p ~/.hermes
 touch ~/.hermes/.env
-```
-
-Add your Cursor API key (do not commit this file):
-
-```bash
 echo 'CURSOR_API_KEY=crsr_your_key_here' >> ~/.hermes/.env
-```
-
-Verify the variable is present (value redacted):
-
-```bash
 grep -E '^CURSOR_API_KEY=' ~/.hermes/.env | sed 's/=.*/=***/'
 ```
 
-## 4. Verify the provider
-
-Open the interactive model/provider picker and confirm **cursor** appears:
+### Provider + smoke test
 
 ```bash
-uv run hermes model
-```
-
-You can also set provider/model non-interactively if your fork supports it:
-
-```bash
+uv run hermes model          # confirm `cursor` is listed
 uv run hermes config set model.provider cursor
-uv run hermes config set model name composer-2.5
+uv run hermes config set model name grok-4.6
 ```
 
-Exact config keys may vary by fork revision — use `hermes model` when unsure.
+One-shot:
 
-## 5. Test connectivity
+```bash
+uv run hermes chat --provider cursor -m grok-4.6 -q "Reply with exactly NATIVE_CURSOR_OK and nothing else."
+```
 
-Probe the Cursor account and model catalog:
+Legacy-only extras (may be missing on the sdk tree):
 
 ```bash
 uv run hermes cursor me
 uv run hermes cursor models
 ```
 
-Expected: account metadata for `me`, and a list that includes models such as
-`composer-2.5`.
-
-Optional cross-check with this repo’s helper (uses the same API key):
+Catalog helper in this repo (same key):
 
 ```bash
 export CURSOR_API_KEY="$(grep -E '^CURSOR_API_KEY=' ~/.hermes/.env | cut -d= -f2-)"
-# from hermes-self-hosted:
 ./scripts/tools/list-cursor-models.sh
 ```
 
-## 6. Run with Cursor
+Prefix commands with `uv run`, or `source .venv/bin/activate`. For a global
+`hermes`, see [Make Hermes available globally](#make-hermes-available-globally).
 
-Start a chat through the Cursor provider:
+## Updating
 
-```bash
-uv run hermes --provider cursor --model composer-2.5
-```
+| Tree | How |
+|---|---|
+| Official install | `hermes update` — see [INSTALL-HERMES.md](INSTALL-HERMES.md) |
+| `hermes-agent` (legacy) | **Do not** `hermes update` against Nous. Cherry-pick only Cursor runtime fixes onto `feat/cursor-native-integration`. |
+| `hermes-agent-sdk` | Fetch Nous `main`, rebase/replay the Cursor commits, push `origin`. |
 
-One-shot prompt:
-
-```bash
-uv run hermes --provider cursor --model composer-2.5 chat -q "Reply with: cursor ok"
-```
-
-If the CLI rejects flags, use the picker first (`hermes model` → cursor /
-composer-2.5), then:
+Sync the sdk tree (from a full clone, not `--depth 1`):
 
 ```bash
-uv run hermes chat -q "Reply with: cursor ok"
+cd hermes-agent-sdk
+git fetch upstream
+git checkout main
+git rebase upstream/main
+# resolve the same files #88212 already touches:
+#   agent/conversation_loop.py, agent/agent_runtime_helpers.py,
+#   agent/auxiliary_client.py, plugins/model-providers/cursor/,
+#   hermes_cli/*, providers/base.py
+git push origin main
 ```
 
-## 7. Make Hermes available globally
+If rebase is painful, reset `main` to `upstream/main` and cherry-pick the
+Cursor series again (the six #88212 commits, or whatever you still carry).
 
-By default, `hermes` only works with `uv run hermes ...` inside the fork
-directory. Prefer a symlink so bare `hermes` works from any path immediately.
+Watch [Nous #88212](https://github.com/NousResearch/hermes-agent/pull/88212).
+`needs-decision` + conflicts means “keep the snapshot”, not “rebase the
+legacy runtime”.
+
+## Make Hermes available globally
+
+By default `hermes` only works as `uv run hermes` inside the clone.
 
 ### Option A: Symlink (recommended)
 
 ```bash
+# sdk instance
+ln -sf ~/projects/hermes-agent-sdk/.venv/bin/hermes ~/.local/bin/hermes
+
+# legacy instance (other host)
 ln -sf ~/projects/hermes-agent/.venv/bin/hermes ~/.local/bin/hermes
 ```
 
-Ensure `~/.local/bin` is on your `PATH`. This makes `hermes` available
-immediately from any directory.
+`~/.local/bin` must be on `PATH`. One symlink per host.
 
-> **Note — editable install:** `uv pip install -e .` installs the Python
-> package but does **not** put `hermes` on your `PATH`. Prefer the symlink
-> above. If you still want an editable install for local development:
->
-> ```bash
-> cd ~/projects/hermes-agent
-> uv pip install -e .
-> ```
->
-> Then add the symlink (Option A) so the `hermes` command is globally
-> available. Code changes under the fork are picked up without reinstalling.
+`uv pip install -e .` does **not** put `hermes` on `PATH`. Use the symlink.
 
 ### Option B: Shell alias
 
 ```bash
-echo 'alias hermes="cd ~/projects/hermes-agent && uv run hermes"' >> ~/.zshrc
-source ~/.zshrc
+echo 'alias hermes="cd ~/projects/hermes-agent-sdk && uv run hermes"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
 ### Verify
 
 ```bash
 which hermes          # ~/.local/bin/hermes (option A)
-hermes model          # works from any directory
+hermes --version
+hermes model
 ```
 
-## Troubleshooting
+## Rollback — official Hermes
 
-| Symptom | What to check |
-|---|---|
-| `cursor` missing from `hermes model` | Wrong checkout / branch; Cursor provider not merged into this fork tip. `git log --oneline \| head` and confirm you are on the Cursor-enabled branch. |
-| `ModuleNotFoundError` / missing deps | Re-run `uv sync` from the fork root. If extras are required: `uv sync --all-extras` (or install `[all,dev]` per the fork’s CONTRIBUTING). |
-| `CURSOR_API_KEY` / auth errors | Key missing or truncated in `~/.hermes/.env`; export not loaded. Re-add the key; restart the shell; avoid quoting spaces incorrectly. |
-| `401` / unauthorized on `hermes cursor me` | Invalid or revoked API key; subscription tier without API access. Create a new key under a Pro+ account. |
-| `hermes: command not found` | Use `uv run hermes ...` from the clone, activate `.venv`, or create the recommended symlink (section 7, Option A). |
-| Python / wheel build failures | Need Python 3.11–3.13 (`uv python install 3.12` then `uv sync`). |
-| Official `hermes` shadows the fork | `which hermes` may point at `~/.local/bin` from the installer. Prefer `uv run hermes` from the clone while testing. |
-
-Debug helpers:
-
-```bash
-uv run hermes doctor
-uv run hermes --version
-which -a hermes
-echo "$VIRTUAL_ENV"
-```
-
-## Rollback — return to official Hermes
-
-1. Leave the fork checkout (or remove it):
-
-```bash
-cd ~
-# optional: rm -rf ~/path/to/hermes-agent
-```
-
-2. If you only used `uv run` from the clone, the official install is unchanged.
-   Confirm:
+1. Leave the clone (optional `rm -rf` the checkout).
+2. If you only used `uv run` from the clone, the official install is unchanged:
 
 ```bash
 which hermes
 hermes --version
 ```
 
-3. If you overwrote the official install or PATH entry, reinstall with the
-   upstream installer:
+3. If PATH or the official install was overwritten:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
-source ~/.bashrc   # or ~/.zshrc
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup --non-interactive
+source ~/.bashrc
 hermes doctor
 ```
 
-4. Clear Cursor-only config if you want a clean official default:
+4. Drop Cursor-only config if you no longer need it:
 
 ```bash
-# optional — review before editing
 grep -n -i cursor ~/.hermes/config.yaml ~/.hermes/.env 2>/dev/null || true
-# remove or comment CURSOR_API_KEY if no longer needed
 ```
 
-See [INSTALL-HERMES.md](INSTALL-HERMES.md) for the normal host install path.
+## Troubleshooting
+
+| Symptom | What to check |
+|---|---|
+| `cursor` missing from `hermes model` | Wrong repo/branch. Sdk: `main`. Legacy: a `cursor-*` branch, not frozen `main`. |
+| Official `hermes` shadows the tree | `which -a hermes` — installer vs symlink vs `uv run`. |
+| `ModuleNotFoundError` | `uv sync` at the clone root. Try `uv sync --all-extras`. |
+| `CURSOR_API_KEY` / `401` | Key missing, truncated, or not Pro+. New key at the dashboard. |
+| `hermes: command not found` | `uv run hermes` from the clone, or the symlink above. |
+| Context bar `825K/256K` | Legacy tree without the meter fix. Checkout `fix/cursor-context-meter-and-recycle` (grok-4.6 is 500K). |
+| Session hangs after a huge tool dump | Legacy: Cursor owns the window; Hermes will not compact. Use the recycle patch or a new chat. Prefer the sdk tree. |
+| `gh repo fork` fails / “already forked” | Expected. Create a normal repo (`hermes-agent-sdk` pattern). |
+| `hermes update` says “up to date” on v0.19 | It is up to date **with the fork**, not with Nous. |
+| Python / wheel failures | Python 3.11–3.13 (`uv python install 3.12 && uv sync`). |
+
+```bash
+uv run hermes doctor
+uv run hermes --version
+which -a hermes
+echo "$VIRTUAL_ENV"
+git remote -v && git log -1 --oneline
+```
 
 ## Related
 
-- Official Hermes install: [INSTALL-HERMES.md](INSTALL-HERMES.md)
-- Mise tools: [MISE.md](MISE.md)
-- Cursor model list helper: [`scripts/tools/list-cursor-models.sh`](../scripts/tools/list-cursor-models.sh)
-- Fork: https://github.com/to-ge-da/hermes-agent
+- Official install: [INSTALL-HERMES.md](INSTALL-HERMES.md)
+- Uninstall: [hermes-uninstall.md](hermes-uninstall.md)
+- Mise: [MISE.md](MISE.md)
+- Cursor catalog helper: [`scripts/tools/list-cursor-models.sh`](../scripts/tools/list-cursor-models.sh)
+- Research (2026-07-28): [cursor-integration-research.md](cursor-integration-research.md)
+- Legacy fork: https://github.com/to-ge-da/hermes-agent
+- Sdk snapshot: https://github.com/to-ge-da/hermes-agent-sdk
 - Upstream: https://github.com/NousResearch/hermes-agent
+- Nous Cursor PR: https://github.com/NousResearch/hermes-agent/pull/88212
