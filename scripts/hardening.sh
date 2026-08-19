@@ -23,6 +23,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/banner.sh
+source "$SCRIPT_DIR/lib/banner.sh"
+
 # ──────────────────────
 # Helpers
 # ──────────────────────
@@ -43,6 +47,8 @@ Hardening script for Hermes Agent on Debian servers.
 Run this AFTER bootstrap.sh on a fresh Debian install.
 
 Options:
+  --force             Continue even if the admin user has no SSH keys
+                      (you can lock yourself out of SSH)
   -h, --help          Show this help message
 
 Must be run as root (sudo).
@@ -56,8 +62,14 @@ EOF
 # ──────────────────────
 # Parse arguments
 # ──────────────────────
+FORCE=false
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --force)
+            FORCE=true
+            shift
+            ;;
         -h|--help)
             usage
             ;;
@@ -73,6 +85,8 @@ done
 if [[ $EUID -ne 0 ]]; then
     err "This script must be run as root (use sudo)."
 fi
+
+print_hermes_banner "hardening"
 
 # ──────────────────────
 # Fix /etc/hosts (avoid sudo: unable to resolve host warnings)
@@ -118,7 +132,10 @@ done
 
 if [[ "$SSH_USERS" == "hermes" ]]; then
     warn "No SSH keys found for any user other than hermes."
-    warn "AllowUsers will only include 'hermes'. Add admin keys before running this script."
+    if [[ "$FORCE" != true ]]; then
+        err "Refusing to disable password auth with AllowUsers=hermes only. Add the admin SSH key, or pass --force (you may lock yourself out)."
+    fi
+    warn "Continuing because --force was set. AllowUsers will only include 'hermes'."
 fi
 
 log "AllowUsers: $SSH_USERS"

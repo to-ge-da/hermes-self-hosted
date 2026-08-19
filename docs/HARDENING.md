@@ -89,11 +89,13 @@ Legitimate users authenticate in under a second. A 20-second window is generous 
 
 **Why:** Prevents "ghost sessions" — connections that appear active but whose client has disconnected without properly closing (laptop lid closed, network dropped, VPN disconnected). Without this, dead sessions accumulate indefinitely, consuming resources and appearing in `who`/`w` output. Ten minutes is a practical timeout: enough to survive brief network blips, short enough to clean up real disconnects.
 
-### AllowUsers admin hermes
+### AllowUsers (dynamic)
 
-**What it does:** Whitelist — only the listed usernames are permitted to authenticate via SSH. Any other user, even with a valid key, is rejected before authentication begins.
+**What it does:** Whitelist — only usernames with a non-empty `~/.ssh/authorized_keys` (plus `hermes`) are permitted to authenticate via SSH.
 
-**Why:** This is the simplest and most effective SSH access control. On a server with multiple users (including system accounts like `www-data`, `git`, or service accounts), `AllowUsers` ensures that only the two human operators (`admin` and `hermes`) can even attempt to log in. Without it, any user account with an SSH key in `~/.ssh/authorized_keys` is a potential entry point — including accounts you forgot about or that were created by packages you installed.
+The script scans `/home/*/.ssh/authorized_keys` and writes `AllowUsers` from that list. If only `hermes` has a key, it **exits** unless you pass `--force` — otherwise disabling `PasswordAuthentication` can lock out the admin.
+
+**Why:** This is the simplest SSH access control. System accounts (`www-data`, `git`, …) stay out. Do not run `--force` on a remote host unless you have console access.
 
 ### X11Forwarding no
 
