@@ -14,6 +14,7 @@
 >   hotfixes.
 > - How to install, isolate, and update both:
 >   [testing-custom-forks.md](testing-custom-forks.md).
+> - One-shot pass/fail: [SMOKE_TEST](testing-custom-forks.md#smoke_test).
 >
 > #88212 is the same *goal* as lawmight#1, not the same git history. Nous still
 > has it `needs-decision` and conflicting. The sdk repo exists because an org

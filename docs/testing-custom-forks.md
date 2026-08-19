@@ -91,6 +91,8 @@ gh repo clone to-ge-da/hermes-agent-sdk -- --depth 1
 cd hermes-agent-sdk
 # default branch `main` is already Nous tip + #88212
 uv sync
+# cursor-sdk is lazy-only (~48 MB). uv sync / [all] will not pull it.
+uv pip install cursor-sdk
 uv run hermes --version
 uv run hermes doctor
 ```
@@ -110,6 +112,7 @@ git branch -a | grep -i cursor
 #   fix/cursor-context-meter-and-recycle   # 500K meter + session recycle
 git checkout fix/cursor-context-meter-and-recycle   # if you need the meter fix
 uv sync
+uv pip install cursor-sdk   # lazy-only; first cursor turn also auto-installs
 uv run hermes --version
 # expect: Hermes Agent v0.19.0 … local <sha> (+N carried commits)
 ```
@@ -123,19 +126,43 @@ echo 'CURSOR_API_KEY=crsr_your_key_here' >> ~/.hermes/.env
 grep -E '^CURSOR_API_KEY=' ~/.hermes/.env | sed 's/=.*/=***/'
 ```
 
-### Provider + smoke test
+## SMOKE_TEST
+
+Same one-shot on both trees. This section is the source of truth — do not
+copy it into the Hermes clones.
 
 ```bash
 uv run hermes model          # confirm `cursor` is listed
 uv run hermes config set model.provider cursor
-uv run hermes config set model name grok-4.6
+uv run hermes config set model.name grok-4.6
 ```
 
-One-shot:
+One-shot (this is the pass/fail):
 
 ```bash
 uv run hermes chat --provider cursor -m grok-4.6 -q "Reply with exactly NATIVE_CURSOR_OK and nothing else."
 ```
+
+**Pass:** the model reply contains `NATIVE_CURSOR_OK`.
+
+Sdk tree: `hermes --version` is **not** `v0.19.0`.  
+Legacy tree: `hermes --version` **is** `v0.19.0`.
+
+### Expected noise (not a fail)
+
+Seen on a Cursor-only box after `uv pip install cursor-sdk` (2026-08-19, host `testnet`):
+
+| Symptom | Why | Optional fix |
+|---|---|---|
+| `TERMINAL_CWD=… found in .env — this is deprecated` | Hermes moved cwd to `config.yaml`. | `hermes config set terminal.cwd /path` then drop the `.env` line. |
+| `Auxiliary title generation failed: No LLM provider configured for task=title_generation` | Titles/compression do **not** use `cursor-sdk://`. #88212 diverts aux to `xai-oauth`; a Cursor-only `.env` has no HTTP provider. **Chat still works.** | `hermes config set auxiliary.title_generation.enabled false` **or** add a cheap HTTP provider (`XAI_API_KEY`, OpenRouter, `hermes auth add xai-oauth`). |
+| Model says “I’m Cursor Grok 4.6, not Hermes” | You addressed the harness; the model answered with its identity. | Ignore. Hermes is the harness; Grok 4.6 via Cursor is the model. |
+
+### Fail
+
+`ModuleNotFoundError` / missing `cursor_sdk` → `uv pip install cursor-sdk` (not bare `pip`; not `uv sync`).  
+`401` / missing key → new dashboard key.  
+`cursor` not in `hermes model` → wrong repo/branch.
 
 Legacy-only extras (may be missing on the sdk tree):
 
@@ -246,7 +273,9 @@ grep -n -i cursor ~/.hermes/config.yaml ~/.hermes/.env 2>/dev/null || true
 |---|---|
 | `cursor` missing from `hermes model` | Wrong repo/branch. Sdk: `main`. Legacy: a `cursor-*` branch, not frozen `main`. |
 | Official `hermes` shadows the tree | `which -a hermes` — installer vs symlink vs `uv run`. |
-| `ModuleNotFoundError` | `uv sync` at the clone root. Try `uv sync --all-extras`. |
+| `ModuleNotFoundError` / missing `cursor_sdk` | `uv pip install cursor-sdk` in the clone venv. `uv sync` and `[all]` do **not** install it. |
+| `Deprecated .env` / `TERMINAL_CWD` | Setup warning, not a Cursor fail. Move cwd to `config.yaml` (see [SMOKE_TEST](#smoke_test)). |
+| `Auxiliary title generation failed` | Expected on a Cursor-only box. Chat is fine. Disable titles or add an HTTP aux provider. |
 | `CURSOR_API_KEY` / `401` | Key missing, truncated, or not Pro+. New key at the dashboard. |
 | `hermes: command not found` | `uv run hermes` from the clone, or the symlink above. |
 | Context bar `825K/256K` | Legacy tree without the meter fix. Checkout `fix/cursor-context-meter-and-recycle` (grok-4.6 is 500K). |
@@ -268,6 +297,7 @@ git remote -v && git log -1 --oneline
 - Official install: [INSTALL-HERMES.md](INSTALL-HERMES.md)
 - Uninstall: [hermes-uninstall.md](hermes-uninstall.md)
 - Mise: [MISE.md](MISE.md)
+- Smoke test: [SMOKE_TEST](#smoke_test)
 - Cursor catalog helper: [`scripts/tools/list-cursor-models.sh`](../scripts/tools/list-cursor-models.sh)
 - Research (2026-07-28): [cursor-integration-research.md](cursor-integration-research.md)
 - Legacy fork: https://github.com/to-ge-da/hermes-agent
