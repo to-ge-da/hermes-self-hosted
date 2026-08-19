@@ -282,6 +282,7 @@ grep -n -i cursor ~/.hermes/config.yaml ~/.hermes/.env 2>/dev/null || true
 | `ModuleNotFoundError` / missing `cursor_sdk` | `uv pip install cursor-sdk` in the clone venv. `uv sync` and `[all]` do **not** install it. |
 | `Deprecated .env` / `TERMINAL_CWD` | Setup warning, not a Cursor fail. Move cwd to `config.yaml` (see [SMOKE_TEST](#smoke_test)). |
 | `Auxiliary title generation failed` | Expected on a Cursor-only box. Chat is fine. Disable titles or add an HTTP aux provider. |
+| After `/exit`, typing is invisible (need new SSH) | TUI cooked→raw healer raced past unwind and left `stty -echo`. Current sdk `main` snapshots tty attrs at TUI start and restores them on every exit. `git pull`. Temporary: `stty sane`. |
 | `CURSOR_API_KEY` / `401` | Key missing, truncated, or not Pro+. New key at the dashboard. |
 | `hermes: command not found` | `uv run hermes` from the clone, or the symlink above. |
 | Context bar `825K/256K` | Legacy tree without the meter fix. Checkout `fix/cursor-context-meter-and-recycle` (grok-4.6 is 500K). |
