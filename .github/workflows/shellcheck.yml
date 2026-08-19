@@ -23,8 +23,11 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@00cae500b08a931fb569eb20110df3091ab23318 # v2.0.0
-        with:
-          scandir: scripts
-          severity: warning
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(find scripts -type f -name '*.sh' | sort)
+          shellcheck -x --severity=warning "${files[@]}"
