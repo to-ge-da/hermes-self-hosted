@@ -150,7 +150,13 @@ Legacy tree: `hermes --version` **is** `v0.19.0`.
 
 ### Expected noise (not a fail)
 
-Seen on a Cursor-only box after `uv pip install cursor-sdk` (2026-08-19, host `testnet`):
+On current `hermes-agent-sdk` `main`, these should **not** appear:
+
+- `TERMINAL_CWD` in `.env` is copied into `config.yaml` `terminal.cwd` on startup.
+- Missing HTTP aux for titles is skipped quietly (Cursor-only box).
+
+If you still see them, `git pull` the sdk tree. Older checkouts (and the
+legacy v0.19 tree) still print:
 
 | Symptom | Why | Optional fix |
 |---|---|---|
