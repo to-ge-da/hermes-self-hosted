@@ -96,6 +96,19 @@ legacy_flag_error() {
     err "Flag '$1' is no longer supported. Use --config with a YAML file."
 }
 
+apt_install() {
+    local label="$1"
+    shift
+    local pkg
+    [[ $# -gt 0 ]] || err "apt_install: no packages for $label"
+    log "Installing $label..."
+    apt -qq install -y "$@"
+    for pkg in "$@"; do
+        dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q 'install ok installed' \
+            || err "Package missing after apt install ($label): $pkg"
+    done
+}
+
 # Run a command as ADMIN_USER with a login-like env and mise on PATH.
 run_as_admin() {
     sudo -u "$ADMIN_USER" -H bash -lc "export PATH=\"\$HOME/.local/bin:\$PATH\"; $*"
@@ -412,21 +425,32 @@ apt -qq upgrade -y
 apt -qq autoremove -y
 
 # ──────────────────────
-# 3. Essential packages
+# 3. Packages (three categories — see docs/BOOTSTRAP.md)
 # ──────────────────────
-log "Installing essential packages..."
-apt -qq install -y \
-    sudo \
+# Host baseline: SSH, downloads, git, unattended upgrades.
+# sudo comes from the Debian admin user; ufw is installed in hardening.sh.
+apt_install "host baseline packages" \
     openssh-server \
     curl \
     wget \
     git \
-    vim \
-    ufw \
     unattended-upgrades \
     apt-listchanges \
-    tree \
-    nmap
+    tree
+
+# Network stack for the Hermes host (iproute2 is already on Debian).
+apt_install "network stack packages" \
+    nmap \
+    net-tools
+
+# Hermes Agent installer deps: so the passwordless hermes user is not
+# prompted for sudo (official install.sh checks these).
+apt_install "Hermes Agent system packages" \
+    build-essential \
+    python3-dev \
+    libffi-dev \
+    ripgrep \
+    ffmpeg
 
 # ──────────────────────
 # 4. Hostname (from config)
