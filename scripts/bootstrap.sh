@@ -116,6 +116,7 @@ yq_eval() {
 # ──────────────────────
 # Parse arguments
 # ──────────────────────
+show_banner
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --config)
@@ -162,7 +163,6 @@ ADMIN_HOME="$(getent passwd "$ADMIN_USER" | cut -d: -f6)"
 STATE_DIR="${ADMIN_HOME}/.hermes-self-hosted"
 STATE_FILE="${STATE_DIR}/bootstrap.state"
 
-show_banner
 log "Detected admin user: $ADMIN_USER"
 log "State directory: $STATE_DIR"
 
