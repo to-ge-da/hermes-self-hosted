@@ -7,7 +7,7 @@
 It exists to turn a bare Debian install into a consistent base:
 
 - Apply hostname, timezone, and locale from a YAML config
-- Install essential packages
+- Install packages in three groups (host baseline, network stack, Hermes deps)
 - Create the **hermes** agent user (key-only SSH, no sudo by default)
 - Install that user’s SSH public key from config
 - Lock the root account and ensure SSH drop-in config dir exists
@@ -33,7 +33,7 @@ Ordered install path: [INSTALLATION.md](INSTALLATION.md).
 - [Usage](#usage)
 - [What it does](#what-it-does)
 - [State and re-runs](#state-and-re-runs)
-- [Essential packages](#essential-packages)
+- [Packages](#packages)
 - [Users after bootstrap](#users-after-bootstrap)
 - [After running](#after-running)
 - [Standalone / out-of-repo](#standalone--out-of-repo)
@@ -136,7 +136,7 @@ Legacy flags (`--hostname`, `--timezone`, `--ssh-key`) and interactive prompts a
 | Preflight | Resolves config; requires mise + yq (no tool installs) |
 | Config load | Parses and validates the YAML config |
 | System update | `apt update && apt upgrade` |
-| Essential packages | See [Essential packages](#essential-packages) |
+| Packages | Three apt groups — see [Packages](#packages) |
 | Hostname | From config |
 | Timezone | From config (default `UTC`) |
 | Locale | `en_US.UTF-8` |
@@ -178,24 +178,40 @@ MISE_VERSION=2024.x.x
 
 If `/var/lib/hermes-self-hosted/bootstrap.state` exists, bootstrap migrates it to the new location when possible (or warns if it cannot). Old fields are copied; `PREVIOUS_HOSTNAME` is set from the old hostname; `CONFIG_HASH` / `MISE_VERSION` may be empty after migration.
 
-## Essential packages
+## Packages
+
+Three `apt` groups. `sudo` comes from the Debian admin user (bootstrap already requires it). `ufw` is installed by [HARDENING.md](HARDENING.md).
+
+### Host baseline
+
+SSH, downloads, git, unattended upgrades, and `tree`.
 
 | Package | Purpose |
 |---------|---------|
-| `sudo` | Privilege escalation |
 | `openssh-server` | SSH daemon |
 | `curl`, `wget` | Downloads |
 | `git` | Version control |
-| `vim` | Text editor |
-| `ufw` | Firewall — configured in hardening |
 | `unattended-upgrades` | Auto security updates — configured in hardening |
 | `apt-listchanges` | Changelogs during upgrades |
 | `tree` | Directory listing |
-| `nmap` | Network scanner |
-| `build-essential`, `python3-dev`, `libffi-dev` | Hermes Agent Python build deps (unprivileged install) |
-| `ripgrep`, `ffmpeg` | Hermes Agent optional tools (fast search, TTS) |
 
-These last packages prepare the host for [INSTALL-HERMES.md](INSTALL-HERMES.md) so the official installer does not prompt the passwordless `hermes` user for `sudo`.
+### Network stack
+
+Tools for the Hermes host. Debian already ships `iproute2` (`ip`, `ss`); this group adds the classic extras.
+
+| Package | Purpose |
+|---------|---------|
+| `nmap` | Network scanner |
+| `net-tools` | `ifconfig`, `netstat`, `route` |
+
+### Hermes Agent system packages
+
+Prepare the host for [INSTALL-HERMES.md](INSTALL-HERMES.md) so the official installer does not prompt the passwordless `hermes` user for `sudo`.
+
+| Package | Purpose |
+|---------|---------|
+| `build-essential`, `python3-dev`, `libffi-dev` | Python build deps (unprivileged install) |
+| `ripgrep`, `ffmpeg` | Optional tools the installer looks for (fast search, TTS) |
 
 ## Users after bootstrap
 

@@ -23,7 +23,7 @@ Official installation of Hermes Agent on the server. Run as the unprivileged **h
 sudo apt install -y build-essential python3-dev libffi-dev ripgrep ffmpeg
 ```
 
-If the installer still asks `Install ripgrep … ffmpeg …?` or `Install build tools?`, answer **`n`** as hermes (do not enter a sudo password). If stuck at `[sudo] password for hermes:`, press Ctrl+C or let sudo fail, install the packages as admin, then re-run the installer if the venv/deps step failed.
+After this bootstrap, the installer should not prompt. If it still asks for sudo as `hermes`, stop, install the packages as admin, and re-run.
 
 ## Installation
 
