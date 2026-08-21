@@ -124,8 +124,7 @@ sudo ./scripts/bootstrap.sh
 
 If config or mise/yq is missing, bootstrap exits immediately — before changing the host.
 
-Current flags: `--config PATH`, `-h` / `--help`.  
-`--check` (validate config + preconditions, no mutations) is tracked in issue #32. `--dry-run` is not planned.
+Current flags: `--config PATH`, `-h` / `--help`.
 
 Legacy flags (`--hostname`, `--timezone`, `--ssh-key`) and interactive prompts are removed — use the YAML config.
 
