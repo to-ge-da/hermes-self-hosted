@@ -2,8 +2,6 @@
 
 Conventions for this repo.
 
-Here, Hermes means the agent, its system user, and the install target, not a GitHub workflow role.
-
 ## Git
 
 - Branch from `main`: `feat/`, `fix/`, `chore/`, `docs/`
