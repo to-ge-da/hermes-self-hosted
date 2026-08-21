@@ -1,47 +1,29 @@
-# hermes-self-hosted — Development Guide
+# AGENTS.md
 
-Conventions for humans and Cursor working in this repository.
+Conventions for this repo.
 
-## Project Overview
+## Git
 
-**Repo:** `to-ge-da/hermes-self-hosted`
+- Branch from `main`: `feat/`, `fix/`, `chore/`, `docs/`
+- Conventional Commits
+- Do not commit or push to `main`
 
-Scripts and docs to prepare a Debian host and install one Hermes Agent instance
-(bootstrap, hardening, then the official Hermes installer).
+## GitHub
 
-| Target | Status |
-|---|---|
-| Self-hosted (local machine or local VM) | Documented and supported |
-| VPS | Not covered yet |
-| Amazon EC2 | Not covered yet |
+- Use `gh` for issues, PRs, and merge
+- Squash merge; delete the remote branch after merge
+- Bug, Feature, or Task issue template; follow the PR template
 
-Single instance per host today. Multi-instance is not supported.
+## Scripts
 
-**Stack:** Bash scripts + Hermes Agent (official installer). Models via external API (OpenRouter); local inference TBD.
+- Live in `scripts/`: `#!/bin/bash`, `set -euo pipefail`, `--help`
+- Bootstrap is YAML via `--config` (no prompts)
+- Run `shellcheck` on new or edited scripts (CI covers `scripts/`)
 
-In this repo, **Hermes** means the agent product, its system user, and the install target — not a GitHub workflow role.
+## Docs
 
-## Git Conventions
-
-- Use `gh` CLI for all GitHub operations (issues, PRs, merge)
-- Branch from `main`: `feat/`, `fix/`, or `chore/` prefix
-- Conventional Commits (`feat:`, `fix:`, `docs:`, etc.)
-- Squash merge, delete branch after merge
-- **NEVER commit or push to `main`**
-
-## Code Standards
-
-- **Scripts:** `scripts/`, `#!/bin/bash`, `set -euo pipefail`, `--help` flag; bootstrap is config-driven (YAML via `--config`, no interactive prompts)
-- **Documentation:** `docs/` directory, Markdown
+Markdown in `docs/`.
 
 ## Testing
 
-- Run `shellcheck` on all new/edited scripts
-- Test in a VM (VirtualBox) with a fresh Debian install
-- Run the full install flow (self-hosted path) to verify it completes without errors
-
-## Project Phases
-
-Mise tools (prerequisite) → Bootstrap (`bootstrap.sh`) → Hardening (`hardening.sh`) → Network → Hermes install (official installer) → Profiles (TBD).
-
-These phases describe the **self-hosted** instance path today. Full ordered path with links: [docs/INSTALLATION.md](docs/INSTALLATION.md).
+Smoke on a fresh Debian VM. Walk the path in [docs/INSTALLATION.md](docs/INSTALLATION.md).

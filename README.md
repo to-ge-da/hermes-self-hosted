@@ -1,51 +1,43 @@
 # Hermes Self-Hosted
 
-Deploy a **Hermes Agent instance** on Debian.
+Prepare a Debian host and install one Hermes Agent instance. This repo covers bootstrap and hardening; the agent itself comes from the official installer.
 
-## What this is
-
-This repository prepares a Debian host and installs **one** Hermes Agent instance (bootstrap/hardening + the official Hermes installer).
-
-**Limits today:** one instance per host. Multi-instance is not supported yet.
-
-## Deployment targets
-
-| Target | Status |
-|---|---|
-| Self-hosted (local machine or local VM) | Documented and supported |
-| VPS | Not covered yet |
-| Amazon EC2 | Not covered yet |
+One instance per host. VPS and EC2 are not documented yet.
 
 ## Stack
 
-- **OS:** Debian Server
-- **Models:** External API (OpenRouter) — local inference TBD
+- OS: Debian Server
+- Models: OpenRouter (external API). Local inference is TBD.
 
-## Docs
+## Install docs
+
+The ordered path is in [INSTALLATION.md](docs/INSTALLATION.md).
 
 | Doc | Topic |
 |---|---|
-| [INSTALLATION.md](docs/INSTALLATION.md) | Ordered self-hosted install path |
-| [BOOTSTRAP.md](docs/BOOTSTRAP.md) | First-boot host setup (purpose, config, usage, state) |
+| [INSTALLATION.md](docs/INSTALLATION.md) | Ordered self-hosted install |
+| [BOOTSTRAP.md](docs/BOOTSTRAP.md) | First-boot host setup |
 | [SSH-KEYS.md](docs/SSH-KEYS.md) | SSH keys for the hermes user |
 | [HARDENING.md](docs/HARDENING.md) | Security hardening |
 | [NETWORK.md](docs/NETWORK.md) | Static IP and DNS |
 | [INSTALL-HERMES.md](docs/INSTALL-HERMES.md) | Hermes Agent install |
-| [hermes-uninstall.md](docs/hermes-uninstall.md) | Completely remove Hermes Agent |
-| [testing-custom-forks.md](docs/testing-custom-forks.md) | Test a custom Hermes fork with Cursor |
 | [FILE-TRANSFER.md](docs/FILE-TRANSFER.md) | Copy files to the host |
-| [MISE.md](docs/MISE.md) | Mise tools, system-wide activation, uninstall |
-| [GITHUB_TEMPLATES.md](docs/GITHUB_TEMPLATES.md) | Issue and PR templates |
-| [profile-templates.md](docs/profile-templates.md) | Hermes USER.md / MEMORY.md starters |
-| [hermes-dashboard-service.md](docs/hermes-dashboard-service.md) | Run the web dashboard as a background service |
-| [cursor-integration-research.md](docs/cursor-integration-research.md) | Research: Cursor–Hermes integration options |
-| [AGENTS.md](AGENTS.md) | Development conventions (humans + Cursor) |
+| [MISE.md](docs/MISE.md) | Mise tools |
 
-Layout: `scripts/` (bootstrap, hardening, mise helpers), `config/` (example bootstrap YAML), `templates/` (Hermes profile starters), `docs/`.
+## Other docs
+
+| Doc | Topic |
+|---|---|
+| [hermes-uninstall.md](docs/hermes-uninstall.md) | Remove Hermes Agent |
+| [testing-custom-forks.md](docs/testing-custom-forks.md) | Test a custom Hermes fork with Cursor |
+| [profile-templates.md](docs/profile-templates.md) | USER.md / MEMORY.md starters |
+| [hermes-dashboard-service.md](docs/hermes-dashboard-service.md) | Dashboard as a background service |
+| [cursor-integration-research.md](docs/cursor-integration-research.md) | Cursor–Hermes integration notes |
+| [GITHUB_TEMPLATES.md](docs/GITHUB_TEMPLATES.md) | Issue and PR templates |
+| [AGENTS.md](AGENTS.md) | Repo conventions |
+
+Layout: `scripts/` (bootstrap, hardening, mise helpers), `config/` (example bootstrap YAML), `templates/` (profile starters), `docs/`.
 
 ## Contributing
 
-- Use the right issue template (Bug, Feature, or Task) — see [GITHUB_TEMPLATES.md](docs/GITHUB_TEMPLATES.md)
-- Follow the PR template
-- Conventional Commits; branch from `main` as `feat/...`, `fix/...`, or `chore/...`
-- Full conventions: [AGENTS.md](AGENTS.md)
+Use the Bug, Feature, or Task issue template and the PR template. Conventional Commits; branch from `main` as `feat/`, `fix/`, `chore/`, or `docs/`. Details: [AGENTS.md](AGENTS.md).
