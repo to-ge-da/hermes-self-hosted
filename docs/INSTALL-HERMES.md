@@ -154,7 +154,7 @@ and extend it with:
 
 This page is **official Nous only**. For `to-ge-da/hermes-agent` (legacy) or
 `to-ge-da/hermes-agent-sdk` (latest + #88212), see
-[testing-custom-forks.md](testing-custom-forks.md). One instance per host;
+[testing-custom-forks.md](../forks/testing-custom-forks.md). One instance per host;
 do not share `~/.hermes` with a fork checkout.
 
 ## Uninstall
