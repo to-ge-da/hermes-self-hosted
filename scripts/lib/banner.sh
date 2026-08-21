@@ -3,9 +3,9 @@
 
 # shellcheck shell=bash
 
-GREEN="${GREEN:-\033[0;32m}"
-CYAN="${CYAN:-\033[0;36m}"
-NC="${NC:-\033[0m}"
+GREEN="${GREEN:-$'\033[0;32m'}"
+CYAN="${CYAN:-$'\033[0;36m'}"
+NC="${NC:-$'\033[0m'}"
 
 print_hermes_banner() {
     local subtitle="${1:-}"
