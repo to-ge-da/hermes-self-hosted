@@ -6,11 +6,15 @@ Here, Hermes means the agent, its system user, and the install target, not a Git
 
 ## Git
 
-- Use `gh` for issues, PRs, and merge
 - Branch from `main`: `feat/`, `fix/`, `chore/`, `docs/`
 - Conventional Commits
-- Squash merge; delete the branch after merge
 - Do not commit or push to `main`
+
+## GitHub
+
+- Use `gh` for issues, PRs, and merge
+- Squash merge; delete the remote branch after merge
+- Bug, Feature, or Task issue template; follow the PR template
 
 ## Scripts
 
