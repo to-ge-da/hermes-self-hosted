@@ -161,7 +161,7 @@ Legacy flags (`--hostname`, `--timezone`, `--ssh-key`) and interactive prompts a
 
 ```ini
 COMPLETED_AT=2026-06-29T12:00:00Z
-SCRIPT_VERSION=1.0.0
+SCRIPT_VERSION=2.0.0
 HOSTNAME=hermes-server
 ADMIN_USER=admin
 HERMES_USER=hermes

@@ -60,18 +60,11 @@ CYAN=$'\033[0;36m'
 BOLD=$'\033[1m'
 NC=$'\033[0m'
 
+# shellcheck source=lib/banner.sh
+source "$SCRIPT_DIR/lib/banner.sh"
+
 show_banner() {
-    # Hardcoded FIGlet Slant wordmark (no figlet/ascii-banner runtime dependency).
-    printf '\n%s' "$GREEN"
-    cat <<'EOF'
-    __  ____________  __  ______________
-   / / / / ____/ __ \/  |/  / ____/ ___/
-  / /_/ / __/ / /_/ / /|_/ / __/  \__ \
- / __  / /___/ _, _/ /  / / /___ ___/ /
-/_/ /_/_____/_/ |_/_/  /_/_____//____/
-EOF
-    printf '%s' "$NC"
-    printf '%sbootstrap v%s%s\n\n' "$CYAN" "$SCRIPT_VERSION" "$NC"
+    print_hermes_banner "bootstrap v${SCRIPT_VERSION}"
 }
 
 log()  { echo -e "${GREEN}[BOOTSTRAP]${NC} $1"; }
@@ -123,6 +116,7 @@ yq_eval() {
 # ──────────────────────
 # Parse arguments
 # ──────────────────────
+show_banner
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --config)
@@ -169,7 +163,6 @@ ADMIN_HOME="$(getent passwd "$ADMIN_USER" | cut -d: -f6)"
 STATE_DIR="${ADMIN_HOME}/.hermes-self-hosted"
 STATE_FILE="${STATE_DIR}/bootstrap.state"
 
-show_banner
 log "Detected admin user: $ADMIN_USER"
 log "State directory: $STATE_DIR"
 

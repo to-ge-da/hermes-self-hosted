@@ -15,3 +15,5 @@ Thumbs.db
 
 # Local bootstrap config (may contain SSH keys) — keep the example tracked
 config/bootstrap.yaml
+bootstrap.yaml
+./bootstrap.yaml

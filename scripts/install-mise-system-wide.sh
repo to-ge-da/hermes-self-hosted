@@ -101,8 +101,36 @@ fi
 # ──────────────────────
 # Check mise installation
 # ──────────────────────
-if ! command -v mise &>/dev/null; then
-    err "mise is not installed. Install mise first (see https://mise.jdx.dev)."
+find_mise() {
+    if command -v mise &>/dev/null; then
+        command -v mise
+        return 0
+    fi
+    if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
+        local home
+        home="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
+        local candidate
+        for candidate in \
+            "${home}/.local/bin/mise" \
+            "${home}/.local/share/mise/shims/mise"
+        do
+            if [[ -x "$candidate" ]]; then
+                printf '%s\n' "$candidate"
+                return 0
+            fi
+        done
+        local from_user
+        from_user="$(sudo -u "$SUDO_USER" -H bash -lc 'command -v mise' 2>/dev/null || true)"
+        if [[ -n "$from_user" ]]; then
+            printf '%s\n' "$from_user"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+if ! find_mise >/dev/null; then
+    err "mise is not installed (not on root PATH or in the sudo user's ~/.local/bin). Install mise first (see https://mise.jdx.dev)."
 fi
 
 # ──────────────────────
