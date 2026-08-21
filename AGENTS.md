@@ -22,7 +22,7 @@ Conventions for this repo.
 
 ## Docs
 
-Markdown in `docs/`. Cursor trees in `forks/`.
+Markdown in `docs/`. Cursor trees in `docs/forks/`.
 
 ## Testing
 
