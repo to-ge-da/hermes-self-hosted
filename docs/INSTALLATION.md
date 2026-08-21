@@ -27,5 +27,4 @@ This page is a map of steps and links. Each linked guide has the full procedure.
 
 - Deployment targets and limits: [README.md](../README.md)
 - Uninstall Hermes Agent: [hermes-uninstall.md](hermes-uninstall.md)
-- Test a custom Hermes fork with Cursor: [testing-custom-forks.md](testing-custom-forks.md)
 - Run the dashboard as a background service: [hermes-dashboard-service.md](hermes-dashboard-service.md)

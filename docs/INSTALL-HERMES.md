@@ -150,6 +150,13 @@ and extend it with:
 - Pre-loaded skills for the target environment
 - Config file templating
 
+## Custom Cursor trees
+
+This page is **official Nous only**. For `to-ge-da/hermes-agent` (legacy) or
+`to-ge-da/hermes-agent-sdk` (latest + #88212), see
+[testing-custom-forks.md](forks/testing-custom-forks.md). One instance per host;
+do not share `~/.hermes` with a fork checkout.
+
 ## Uninstall
 
 To stop the gateway and remove the agent, config, and data, see

@@ -29,12 +29,14 @@ The ordered path is in [INSTALLATION.md](docs/INSTALLATION.md).
 | Doc | Topic |
 |---|---|
 | [hermes-uninstall.md](docs/hermes-uninstall.md) | Remove Hermes Agent |
-| [testing-custom-forks.md](docs/testing-custom-forks.md) | Test a custom Hermes fork with Cursor |
 | [profile-templates.md](docs/profile-templates.md) | USER.md / MEMORY.md starters |
 | [hermes-dashboard-service.md](docs/hermes-dashboard-service.md) | Dashboard as a background service |
-| [cursor-integration-research.md](docs/cursor-integration-research.md) | Cursor–Hermes integration notes |
 | [GITHUB_TEMPLATES.md](docs/GITHUB_TEMPLATES.md) | Issue and PR templates |
 | [AGENTS.md](AGENTS.md) | Repo conventions |
+
+## Forks
+
+Cursor trees hosted here, not the install path. Index: [docs/forks/README.md](docs/forks/README.md).
 
 Layout: `scripts/` (bootstrap, hardening, mise helpers), `config/` (example bootstrap YAML), `templates/` (profile starters), `docs/`.
 
