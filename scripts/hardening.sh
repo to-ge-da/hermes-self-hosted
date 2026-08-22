@@ -175,8 +175,9 @@ apt install -y ufw
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow 22/tcp comment 'SSH'
-# In VM test environments, also enable ping for convenience
-ufw allow icmp || true
+# Do not `ufw allow icmp` — UFW treats that as an application profile
+# name and errors: "Could not find a profile matching 'icmp'".
+# Debian's /etc/ufw/before.rules already ACCEPTs echo-request (ping).
 ufw --force enable
 
 log "Firewall enabled. SSH (22/tcp) allowed inbound."
