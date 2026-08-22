@@ -1,12 +1,21 @@
 # Mise
 
-How this repository uses [mise](https://mise.jdx.dev/) for host tools, optional system-wide activation, and full uninstall.
+How this repository uses [mise](https://mise.jdx.dev/) for the local toolchain, host first-boot pins, optional system-wide activation, and full uninstall.
 
-One script:
+Two config files (mise only loads the `mise*.toml` names):
+
+| File | Audience | How it loads |
+|---|---|---|
+| [`mise.toml`](../mise.toml) | Workstation / clone | default `mise install` |
+| [`mise.host.toml`](../mise.host.toml) | First-boot host | `mise -E host`, with root `mise.toml` ignored |
+
+`yq` is pinned in **both** files at the same version. Keep those pins in sync.
+
+One script (CLI verbs unchanged):
 
 | Command | Purpose |
 |---|---|
-| [`scripts/mise.sh`](../scripts/mise.sh) `install` | Official installer + `mise install` (pinned tools) |
+| [`scripts/mise.sh`](../scripts/mise.sh) `install` | Official installer + host pins (`mise.host.toml`) |
 | `system-wide` | Create or remove `/etc/profile.d/mise.sh` |
 | `uninstall` | Remove mise, its tools, and user activation |
 
@@ -16,7 +25,7 @@ One script:
 
 ## Role in this repo
 
-Bootstrap does **not** install mise. It expects the admin user (`$SUDO_USER`) to already have mise and the pinned tools from the repo’s [`mise.toml`](../mise.toml).
+Bootstrap does **not** install mise. It expects the admin user (`$SUDO_USER`) to already have mise and the host pins from [`mise.host.toml`](../mise.host.toml).
 
 Today that pins:
 
@@ -25,13 +34,28 @@ Today that pins:
 yq = "4.53.3"
 ```
 
-Bootstrap runs `mise exec -- yq` to parse the YAML config. Details: [BOOTSTRAP.md](BOOTSTRAP.md) (purpose and prerequisites).
+Bootstrap runs `mise -E host exec -- yq` (root `mise.toml` ignored) to parse the YAML config. Details: [BOOTSTRAP.md](BOOTSTRAP.md) (purpose and prerequisites).
+
+Root [`mise.toml`](../mise.toml) is the **local toolchain** — what you get with `mise install` in a clone. Grow that file with workstation tools (`gh`, `prek`, …) as needed. Those must not land on a fresh Debian host.
+
+### Why not bare `mise -E host`
+
+mise config environments **merge**. Load order (top wins, all still load):
+
+1. `mise.{ENV}.local.toml`
+2. `mise.local.toml`
+3. `mise.{ENV}.toml`
+4. `mise.toml`
+
+So `mise -E host install` alone still installs `[tools]` from root `mise.toml`. Host wrappers always set `MISE_IGNORED_CONFIG_PATHS` to that file. Do **not** document or run bare `mise -E host` as the host path.
 
 ## Install mise and tools
 
 Requires `curl` on the host — see [INSTALLATION.md](INSTALLATION.md#prerequisites).
 
-As the admin user (not root), once per host (or workstation clone), from the repo root (directory with `mise.toml`):
+### Host (first-boot)
+
+As the admin user (not root), once per host, from the repo root (directory with `mise.toml` and `mise.host.toml`):
 
 ```bash
 ./scripts/mise.sh install
@@ -43,16 +67,31 @@ First-boot one-liner (install + system-wide activation):
 sudo ./scripts/mise.sh install --system-wide
 ```
 
-Idempotent: skips the official installer if mise is already present; `mise install` is safe to re-run.
+This installs **only** host pins. Idempotent: skips the official installer if mise is already present; `mise -E host install` is safe to re-run.
 
-Verify:
+Then run bootstrap as documented in [BOOTSTRAP.md](BOOTSTRAP.md).
+
+### Workstation (local toolchain)
+
+From the repo root, no wrapper:
+
+```bash
+mise install
+```
+
+That reads `mise.toml` only (no `-E`). Use this in a clone. Do not use `./scripts/mise.sh install` when you want laptop tools.
+
+### Verify
 
 ```bash
 mise --version
-mise exec -- yq --version
-```
 
-Then run bootstrap as documented in [BOOTSTRAP.md](BOOTSTRAP.md).
+# workstation toolchain
+mise exec -- yq --version
+
+# host pins (same ignore as the wrappers)
+MISE_IGNORED_CONFIG_PATHS="$PWD/mise.toml" mise -E host exec -- yq --version
+```
 
 ## System-wide activation (optional)
 

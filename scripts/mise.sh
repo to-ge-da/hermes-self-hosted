@@ -41,11 +41,14 @@ usage() {
     cat <<EOF
 Usage: $0 <command> [options]
 
-Manage mise (binary + pinned tools from mise.toml) and optional
+Manage mise (binary + pinned host tools from mise.host.toml) and optional
 system-wide activation. Bootstrap does not install mise — run this first.
 
+The local toolchain is root mise.toml (`mise install` with no -E).
+This script always uses -E host and ignores root mise.toml.
+
 Commands:
-  install         Install mise for the admin user and run mise install
+  install         Install mise for the admin user and host pins (mise.host.toml)
   system-wide     Write /etc/profile.d/mise.sh (requires root)
   uninstall       Remove mise, pinned tools, and user bashrc activation
 
@@ -90,18 +93,31 @@ resolve_target_user() {
         || err "Could not resolve home directory for '${TARGET_USER}'."
 }
 
+is_repo_root() {
+    [[ -f "$1/mise.toml" && -f "$1/mise.host.toml" ]]
+}
+
 resolve_repo_root() {
-    if [[ -f "${PWD}/mise.toml" ]]; then
+    if is_repo_root "$PWD"; then
         REPO_ROOT="$PWD"
         return 0
     fi
     local candidate
     candidate="$(cd "${SCRIPT_DIR}/.." && pwd)"
-    if [[ -f "${candidate}/mise.toml" ]]; then
+    if is_repo_root "$candidate"; then
         REPO_ROOT="$candidate"
         return 0
     fi
-    err "mise.toml not found in ${PWD} or ${candidate}. Run from the repo root."
+    err "mise.toml / mise.host.toml not found in ${PWD} or ${candidate}. Run from the repo root."
+}
+
+# Host pins: mise.host.toml via -E host. Ignore root mise.toml so
+# workstation tools are not installed on the server.
+# MISE_IGNORED_CONFIG_PATHS is early-init — must be env, not mise.toml.
+run_mise_host() {
+    # $* is a pre-quoted command fragment for bash -c (install / exec -- …).
+    # shellcheck disable=SC2086
+    run_as_target "cd $(printf '%q' "$REPO_ROOT") && MISE_IGNORED_CONFIG_PATHS=$(printf '%q' "${REPO_ROOT}/mise.toml") mise -E host $*"
 }
 
 run_as_target() {
@@ -233,10 +249,10 @@ cmd_install() {
         fi
     fi
 
-    log "Installing pinned tools from ${REPO_ROOT}/mise.toml..."
-    run_as_target "cd $(printf '%q' "$REPO_ROOT") && mise install"
-    run_as_target "cd $(printf '%q' "$REPO_ROOT") && mise exec -- yq --version" >/dev/null \
-        || err "mise is installed but yq is not available. Check ${REPO_ROOT}/mise.toml and re-run: $0 install"
+    log "Installing host pins from ${REPO_ROOT}/mise.host.toml..."
+    run_mise_host install
+    run_mise_host exec -- yq --version >/dev/null \
+        || err "mise is installed but yq is not available. Check ${REPO_ROOT}/mise.host.toml and re-run: $0 install"
 
     local version
     version="$(run_as_target 'mise --version' | head -n1 | tr -d '\r')"

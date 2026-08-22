@@ -18,11 +18,11 @@ This page is a map of steps and links. Each linked guide has the full procedure.
 
   `git` clones the repo on the host; `curl` installs mise. No git: copy the repo with [FILE-TRANSFER.md](FILE-TRANSFER.md) (`scp`). `curl` is still required. Bootstrap installs both again later (idempotent).
 - Repo clone on the host (or files copied over — see [FILE-TRANSFER.md](FILE-TRANSFER.md))
-- Mise + pinned tools installed for the admin user — see [MISE.md](MISE.md) (`./scripts/mise.sh install`)
+- Mise + host pins installed for the admin user — see [MISE.md](MISE.md) (`./scripts/mise.sh install`, uses `mise.host.toml`)
 
 ## Install order (self-hosted)
 
-1. **Mise tools (prerequisite)** — `./scripts/mise.sh install` so bootstrap can use pinned `yq`. Add `--system-wide` (with sudo) to activate mise for all users on login. See [MISE.md](MISE.md).
+1. **Mise host tools (prerequisite)** — `./scripts/mise.sh install` so bootstrap can use host-pinned `yq` (`mise.host.toml`, not the local toolchain). Add `--system-wide` (with sudo) to activate mise for all users on login. See [MISE.md](MISE.md).
 2. **File transfer (as needed)** — Copy config, keys, or the repo to the host with `scp` / `rsync`. See [FILE-TRANSFER.md](FILE-TRANSFER.md).
 3. **Bootstrap** — Config-driven first-boot setup (`hostname`, hermes user, SSH keys). See [`scripts/bootstrap.sh`](../scripts/bootstrap.sh) and [BOOTSTRAP.md](BOOTSTRAP.md).
 4. **Hardening** — Firewall, kernel, auditd, SSH lockdown. See [`scripts/hardening.sh`](../scripts/hardening.sh) and [HARDENING.md](HARDENING.md).
