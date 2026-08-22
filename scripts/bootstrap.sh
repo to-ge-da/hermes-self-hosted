@@ -420,15 +420,13 @@ apt -qq autoremove -y
 # ──────────────────────
 # 3. Packages (three categories — see docs/BOOTSTRAP.md)
 # ──────────────────────
-# Host baseline: SSH, downloads, git, unattended upgrades.
-# sudo comes from the Debian admin user; ufw is installed in hardening.sh.
+# Host baseline: downloads, git, unattended upgrades.
+# openssh-server, wget, apt-listchanges, iproute2, and sudo are already on
+# Debian 13 netinst + SSH + standard utilities. ufw is installed in hardening.sh.
 apt_install "host baseline packages" \
-    openssh-server \
     curl \
-    wget \
     git \
     unattended-upgrades \
-    apt-listchanges \
     tree
 
 # Network stack for the Hermes host (iproute2 is already on Debian).
