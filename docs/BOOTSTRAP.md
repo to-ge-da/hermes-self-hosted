@@ -46,6 +46,8 @@ Ordered install path: [INSTALLATION.md](INSTALLATION.md).
 3. **mise + yq already installed** for the admin user — bootstrap does **not** install them
 4. Run bootstrap from a directory that contains `mise.toml` (e.g. the project root)
 
+`curl` (and `git` if you clone on the host) must already be installed — see [INSTALLATION.md](INSTALLATION.md#prerequisites).
+
 One-time tool setup (admin user, not root):
 
 ```bash
@@ -179,19 +181,20 @@ If `/var/lib/hermes-self-hosted/bootstrap.state` exists, bootstrap migrates it t
 
 ## Packages
 
-Three `apt` groups. `sudo` comes from the Debian admin user (bootstrap already requires it). `ufw` is installed by [HARDENING.md](HARDENING.md).
+Three `apt` groups. Only packages missing from Debian 13 netinst + SSH server + standard system utilities.
+
+Already on the OS (not listed below): `openssh-server`, `wget`, `apt-listchanges`, `iproute2`, `sudo`. `ufw` is installed by [HARDENING.md](HARDENING.md).
 
 ### Host baseline
 
-SSH, downloads, git, unattended upgrades, and `tree`.
+Downloads, git, rsync, unattended upgrades, and `tree`.
 
 | Package | Purpose |
 |---------|---------|
-| `openssh-server` | SSH daemon |
-| `curl`, `wget` | Downloads |
+| `curl` | Downloads |
 | `git` | Version control |
+| `rsync` | File transfer (host side) |
 | `unattended-upgrades` | Auto security updates — configured in hardening |
-| `apt-listchanges` | Changelogs during upgrades |
 | `tree` | Directory listing |
 
 ### Network stack

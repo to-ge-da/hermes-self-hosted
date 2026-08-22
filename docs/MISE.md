@@ -24,6 +24,8 @@ Bootstrap runs `mise exec -- yq` to parse the YAML config. Details: [BOOTSTRAP.m
 
 ## Install mise and tools
 
+Requires `curl` on the host — see [INSTALLATION.md](INSTALLATION.md#prerequisites).
+
 As the admin user (not root), once per host (or workstation clone):
 
 ```bash
