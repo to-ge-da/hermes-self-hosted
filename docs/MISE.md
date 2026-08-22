@@ -9,7 +9,7 @@ Two config files (mise only loads the `mise*.toml` names):
 | [`mise.toml`](../mise.toml) | Workstation / clone | default `mise install` |
 | [`mise.host.toml`](../mise.host.toml) | First-boot host | `mise -E host`, with root `mise.toml` ignored |
 
-`yq` is pinned in **both** files at the same version. Keep those pins in sync.
+`yq` is host-only (`mise.host.toml`). Root `mise.toml` pins `shellcheck` for the local toolchain.
 
 One script (CLI verbs unchanged):
 
@@ -36,7 +36,7 @@ yq = "4.53.3"
 
 Bootstrap runs `mise -E host exec -- yq` (root `mise.toml` ignored) to parse the YAML config. Details: [BOOTSTRAP.md](BOOTSTRAP.md) (purpose and prerequisites).
 
-Root [`mise.toml`](../mise.toml) is the **local toolchain** — what you get with `mise install` in a clone. Grow that file with workstation tools (`gh`, `prek`, …) as needed. Those must not land on a fresh Debian host.
+Root [`mise.toml`](../mise.toml) is the **local toolchain** — what you get with `mise install` in a clone. Today that pins `shellcheck`. Those tools must not land on a fresh Debian host.
 
 ### Why not bare `mise -E host`
 
@@ -87,7 +87,7 @@ That reads `mise.toml` only (no `-E`). Use this in a clone. Do not use `./script
 mise --version
 
 # workstation toolchain
-mise exec -- yq --version
+mise exec -- shellcheck --version
 
 # host pins (same ignore as the wrappers)
 MISE_IGNORED_CONFIG_PATHS="$PWD/mise.toml" mise -E host exec -- yq --version
