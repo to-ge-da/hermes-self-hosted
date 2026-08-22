@@ -25,6 +25,7 @@ hermes:
 
   # ── SSH public key ────────────────────────────────────────
   # Choose ONE: inline key OR file path. Setting both is an error.
+  # Bootstrap installs this key on hermes AND the admin ($SUDO_USER).
   #
   # Option A — inline key:
   ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL0Gj..."

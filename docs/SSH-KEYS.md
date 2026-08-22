@@ -4,6 +4,9 @@ The `hermes` agent user is **key-only** (password locked). Generate a key on you
 workstation, put the **public** key in bootstrap config, keep the **private** key
 on the workstation, and connect with `ssh -i`.
 
+Bootstrap installs that **same** public key on the admin user (`$SUDO_USER`) so
+hardening can `AllowUsers` both accounts. No extra `authorized_keys` step.
+
 See also: [BOOTSTRAP.md](BOOTSTRAP.md), [FILE-TRANSFER.md](FILE-TRANSFER.md).
 
 ## Method 1 — Ed25519 (recommended)
@@ -60,11 +63,12 @@ ssh -i ~/.ssh/hermes_vbox hermes@HOST
 
 ## Replace a bad or old authorized_keys
 
-Bootstrap **skips** SSH key install if `/home/hermes/.ssh/authorized_keys` already
-exists and is non-empty. To replace:
+Bootstrap **skips** SSH key install if that user’s `authorized_keys` already
+exists and is non-empty (admin or hermes). To replace:
 
 ```bash
 sudo rm /home/hermes/.ssh/authorized_keys
+sudo rm /home/<admin>/.ssh/authorized_keys
 sudo ./scripts/bootstrap.sh --config ./bootstrap.yaml
 ```
 
@@ -73,4 +77,5 @@ Verify on the host (admin needs `sudo` — hermes’s home is not world-readable
 ```bash
 sudo cat /home/hermes/.ssh/authorized_keys
 sudo ssh-keygen -lf /home/hermes/.ssh/authorized_keys
+sudo ssh-keygen -lf ~/.ssh/authorized_keys
 ```

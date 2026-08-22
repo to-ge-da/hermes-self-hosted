@@ -141,9 +141,9 @@ Legacy flags (`--hostname`, `--timezone`, `--ssh-key`) and interactive prompts a
 | Timezone | From config (default `UTC`) |
 | Locale | `en_US.UTF-8` |
 | User PATH | Writes `/etc/profile.d/00-local-bin.sh` — every login user gets `~/.local/bin` on `PATH` |
-| Admin user | Detected via `$SUDO_USER`; creates `~/.local/bin` |
+| Admin user | Detected via `$SUDO_USER` — existing account, not created; creates `~/.local/bin` |
 | Hermes user | Creates agent user from config (default `hermes`, no sudo, key-only); creates `~/.local/bin` |
-| SSH key | From `hermes.ssh_public_key` or `hermes.ssh_public_key_file` |
+| SSH key | Same config key (`hermes.ssh_public_key` or `ssh_public_key_file`) on **hermes and admin** |
 | Root lock | Locks root account |
 | SSH drop-in dir | Creates `/etc/ssh/sshd_config.d/` |
 | State file | Writes `~/.hermes-self-hosted/bootstrap.state` |
@@ -219,7 +219,7 @@ Prepare the host for [install.md](hermes/install.md) so the official installer d
 
 | User | Sudo | Password | Auth |
 |------|------|----------|------|
-| `<admin>` (`$SUDO_USER`) | Yes (from OS install) | As configured during Debian install | SSH key / as installed |
+| `<admin>` (`$SUDO_USER`) | Yes (from OS install) | As configured during Debian install | Same SSH key as hermes (from config), unless `authorized_keys` already existed |
 | `hermes` (or config override) | No | Disabled | SSH key from config |
 
 Bootstrap writes `/etc/profile.d/00-local-bin.sh` once:

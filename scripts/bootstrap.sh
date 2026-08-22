@@ -535,6 +535,44 @@ else
     log "Locale en_US.UTF-8 already available."
 fi
 
+# Install a public key into user/.ssh/authorized_keys if that file is
+# missing or empty. Non-empty files are left alone (idempotent).
+install_authorized_key() {
+    local user="$1"
+    local home="$2"
+    local key="$3"
+    local keys="${home}/.ssh/authorized_keys"
+    local fingerprint
+
+    if [[ -f "$keys" && -s "$keys" ]]; then
+        warn "authorized_keys already exists for $user — not replacing."
+        warn "To install the key from config: sudo rm ${keys} && re-run bootstrap."
+        return 0
+    fi
+
+    mkdir -p "${home}/.ssh"
+    chmod 700 "${home}/.ssh"
+
+    if [[ -n "$key" ]]; then
+        echo "$key" > "$keys"
+        chmod 600 "$keys"
+        chown -R "${user}:${user}" "${home}/.ssh"
+        fingerprint="$(ssh-keygen -lf "$keys" 2>/dev/null | awk '{print $1,$2,$4}' || true)"
+        log "SSH key added for $user (from config)."
+        if [[ -n "$fingerprint" ]]; then
+            log "authorized_keys fingerprint: $fingerprint"
+        fi
+        return 0
+    fi
+
+    warn "No SSH key in config for $user. Skipping key setup."
+    warn "Generate a key (see docs/SSH-KEYS.md), then add it to config and re-run, or:"
+    warn "  echo 'ssh-ed25519 AAAA...' | sudo tee ${keys}"
+    touch "$keys"
+    chmod 600 "$keys"
+    chown -R "${user}:${user}" "${home}/.ssh"
+}
+
 # ──────────────────────
 # 7. User-local PATH (all login users)
 # ──────────────────────
@@ -562,34 +600,18 @@ fi
 ensure_local_bin_dir "$HERMES_USER"
 
 # ──────────────────────
-# 10. Hermes SSH key (from config)
+# 10. SSH keys from config (hermes + admin)
 # ──────────────────────
+# Same public key as hermes.ssh_public_key[_file]. Admin gets it so
+# hardening can AllowUsers the sudo user without a manual extra step.
 log "Setting up SSH for $HERMES_USER..."
+install_authorized_key "$HERMES_USER" "/home/${HERMES_USER}" "$HERMES_SSH_KEY"
 
-if [[ -f "/home/$HERMES_USER/.ssh/authorized_keys" ]] && [[ -s "/home/$HERMES_USER/.ssh/authorized_keys" ]]; then
-    warn "authorized_keys already exists and is non-empty — not replacing."
-    warn "To install the key from config: sudo rm /home/$HERMES_USER/.ssh/authorized_keys && re-run bootstrap."
+log "Setting up SSH for $ADMIN_USER..."
+if [[ -n "$HERMES_SSH_KEY" ]]; then
+    install_authorized_key "$ADMIN_USER" "$ADMIN_HOME" "$HERMES_SSH_KEY"
 else
-    mkdir -p "/home/$HERMES_USER/.ssh"
-    chmod 700 "/home/$HERMES_USER/.ssh"
-
-    if [[ -n "$HERMES_SSH_KEY" ]]; then
-        echo "$HERMES_SSH_KEY" > "/home/$HERMES_USER/.ssh/authorized_keys"
-        chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
-        chown -R "$HERMES_USER:" "/home/$HERMES_USER/.ssh"
-        local_fp="$(ssh-keygen -lf "/home/$HERMES_USER/.ssh/authorized_keys" 2>/dev/null | awk '{print $1,$2,$4}' || true)"
-        log "SSH key added for $HERMES_USER (from config)."
-        if [[ -n "$local_fp" ]]; then
-            log "authorized_keys fingerprint: $local_fp"
-        fi
-    else
-        warn "No SSH key in config for $HERMES_USER. Skipping key setup."
-        warn "Generate a key (see docs/SSH-KEYS.md), then add it to config and re-run, or:"
-        warn "  echo 'ssh-ed25519 AAAA...' | sudo tee /home/$HERMES_USER/.ssh/authorized_keys"
-        touch "/home/$HERMES_USER/.ssh/authorized_keys"
-        chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
-        chown -R "$HERMES_USER:" "/home/$HERMES_USER/.ssh"
-    fi
+    warn "No SSH key in config — not writing authorized_keys for $ADMIN_USER."
 fi
 
 # ──────────────────────

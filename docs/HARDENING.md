@@ -95,6 +95,8 @@ Legitimate users authenticate in under a second. A 20-second window is generous 
 
 The script scans `/home/*/.ssh/authorized_keys` and writes `AllowUsers` from that list. If only `hermes` has a key, it **exits** unless you pass `--force` — otherwise disabling `PasswordAuthentication` can lock out the admin.
 
+After bootstrap, the admin already has the same config key (unless they already had `authorized_keys`). You should not need a manual copy before hardening.
+
 **Why:** This is the simplest SSH access control. System accounts (`www-data`, `git`, …) stay out. Do not run `--force` on a remote host unless you have console access.
 
 ### X11Forwarding no
