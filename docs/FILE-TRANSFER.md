@@ -81,7 +81,7 @@ cd ~/repos/hermes-self-hosted
 sudo ./scripts/bootstrap.sh --config ./bootstrap.yaml
 ```
 
-See [BOOTSTRAP.md](BOOTSTRAP.md) for mise/yq prerequisites and full bootstrap usage.
+See [MISE.md](MISE.md) for `./scripts/mise.sh install`, then [BOOTSTRAP.md](BOOTSTRAP.md).
 
 ## Other methods (TBD)
 

@@ -2,12 +2,17 @@
 
 How this repository uses [mise](https://mise.jdx.dev/) for host tools, optional system-wide activation, and full uninstall.
 
-Scripts stay separate:
+One script:
 
-| Script | Purpose |
+| Command | Purpose |
 |---|---|
-| [`scripts/install-mise-system-wide.sh`](../scripts/install-mise-system-wide.sh) | Create or remove `/etc/profile.d/mise.sh` |
-| [`scripts/uninstall-mise.sh`](../scripts/uninstall-mise.sh) | Remove mise, its tools, and user activation |
+| [`scripts/mise.sh`](../scripts/mise.sh) `install` | Official installer + `mise install` (pinned tools) |
+| `system-wide` | Create or remove `/etc/profile.d/mise.sh` |
+| `uninstall` | Remove mise, its tools, and user activation |
+
+```bash
+./scripts/mise.sh --help
+```
 
 ## Role in this repo
 
@@ -26,13 +31,19 @@ Bootstrap runs `mise exec -- yq` to parse the YAML config. Details: [BOOTSTRAP.m
 
 Requires `curl` on the host — see [INSTALLATION.md](INSTALLATION.md#prerequisites).
 
-As the admin user (not root), once per host (or workstation clone):
+As the admin user (not root), once per host (or workstation clone), from the repo root (directory with `mise.toml`):
 
 ```bash
-curl https://mise.run | sh
-cd /path/to/hermes-self-hosted   # directory with mise.toml
-mise install                     # installs pinned yq
+./scripts/mise.sh install
 ```
+
+First-boot one-liner (install + system-wide activation):
+
+```bash
+sudo ./scripts/mise.sh install --system-wide
+```
+
+Idempotent: skips the official installer if mise is already present; `mise install` is safe to re-run.
 
 Verify:
 
@@ -49,22 +60,24 @@ Make mise-managed tools available to **all users** on login — no per-session `
 
 ### How it works
 
-[`install-mise-system-wide.sh`](../scripts/install-mise-system-wide.sh) creates `/etc/profile.d/mise.sh`, sourced by Bourne-compatible login shells on Debian. It:
+`system-wide` creates `/etc/profile.d/mise.sh`, sourced by Bourne-compatible login shells on Debian. It:
 
 1. Adds mise shims to `PATH`
 2. Runs `mise activate bash` when `mise` is on `PATH`
 
 Works for SSH, console logins, and `sudo -i` without editing each user’s `~/.bashrc`.
 
-Bootstrap does **not** depend on this script.
+Bootstrap does **not** depend on this.
 
-### Install
+### Enable
 
-Requires root and an existing `mise` on PATH:
+Requires root and an existing mise install for `$SUDO_USER`:
 
 ```bash
-sudo ./scripts/install-mise-system-wide.sh
+sudo ./scripts/mise.sh system-wide
 ```
+
+Or combine with install: `sudo ./scripts/mise.sh install --system-wide`.
 
 Idempotent: skips if the file already has the expected content. If the file differs, prompts interactively or exits in non-interactive mode (use `--remove` first to start fresh).
 
@@ -78,10 +91,10 @@ mise doctor
 which yq
 ```
 
-### Remove system-wide config only
+### Disable (profile.d only)
 
 ```bash
-sudo ./scripts/install-mise-system-wide.sh --remove
+sudo ./scripts/mise.sh system-wide --remove
 ```
 
 Deletes `/etc/profile.d/mise.sh`. Takes effect in new login sessions. Does **not** uninstall mise or its tools.
@@ -97,32 +110,23 @@ eval "$(mise activate bash)"
 
 ## Full uninstall
 
-[`uninstall-mise.sh`](../scripts/uninstall-mise.sh) completely removes mise from the current account/environment:
+`uninstall` completely removes mise from the admin account:
 
-1. `mise uninstall --all` — remove installed tool versions  
-2. `mise unuse -g …` — clear global tool config  
-3. Capture paths from `mise implode -n --config`  
-4. Delete those paths (uses `sudo` if the binary is in `/usr/local/bin` or `/usr/bin`)  
+1. `mise uninstall --all` — remove installed tool versions
+2. `mise unuse -g …` — clear global tool config
+3. Capture paths from `mise implode -n --config` and delete them
+4. Remove well-known user paths (`~/.local/bin/mise`, `~/.local/share/mise`, …)
 5. Strip `mise activate` lines from `~/.bashrc` (backup: `~/.bashrc.bak`)
 
 ```bash
-./scripts/uninstall-mise.sh
-./scripts/uninstall-mise.sh --help
+./scripts/mise.sh uninstall
+sudo ./scripts/mise.sh uninstall --system-wide   # also deletes profile.d
 ```
 
-**Important:** this script does **not** remove `/etc/profile.d/mise.sh`. If you enabled system-wide activation, remove that first (or afterward) with:
+If you enabled system-wide activation and uninstall without `--system-wide`, remove the leftover file:
 
 ```bash
-sudo ./scripts/install-mise-system-wide.sh --remove
-```
-
-### Recommended cleanup order
-
-If both system-wide activation and a local mise install were used:
-
-```bash
-sudo ./scripts/install-mise-system-wide.sh --remove
-./scripts/uninstall-mise.sh
+sudo ./scripts/mise.sh system-wide --remove
 ```
 
 Then open a new login session so PATH no longer references mise shims.
@@ -131,21 +135,21 @@ Then open a new login session so PATH no longer references mise shims.
 
 | Symptom | Likely cause | Solution |
 |---|---|---|
-| Bootstrap: mise/yq not ready | Tools not installed for `$SUDO_USER` | As admin: `curl https://mise.run \| sh` then `mise install` in the repo root |
+| Bootstrap: mise/yq not ready | Tools not installed for `$SUDO_USER` | `./scripts/mise.sh install` |
 | Tools missing in new SSH session | `profile.d` not sourced | Use a login shell; confirm Bourne-compatible shell |
-| `mise: command not found` at login | Binary gone but `profile.d` remains | Run `install-mise-system-wide.sh --remove` |
+| `mise: command not found` at login | Binary gone but `profile.d` remains | `sudo ./scripts/mise.sh system-wide --remove` |
 | PATH still has mise after uninstall | System-wide file left behind | Same `--remove` step, then new login |
 
 ## Technical notes
 
-- `/etc/profile.d/` scripts are sourced during login shell init  
-- `${HOME}` in `mise.sh` expands per user at runtime  
-- `mise activate` is guarded with `command -v mise`  
-- System-wide file permissions: `644`  
-- Prefer `profile.d` over editing `/etc/profile` directly  
+- The official installer runs as the admin user (`$SUDO_USER` under sudo), never as root — binary lands in `~/.local/bin`
+- `/etc/profile.d/` scripts are sourced during login shell init
+- `${HOME}` in `profile.d/mise.sh` expands per user at runtime
+- `mise activate` is guarded with `command -v mise`
+- System-wide file permissions: `644`
+- Prefer `profile.d` over editing `/etc/profile` directly
 
 ## References
 
 - [mise documentation](https://mise.jdx.dev/)
-- [BOOTSTRAP.md](BOOTSTRAP.md) — first-boot setup; requires mise + yq  
-
+- [BOOTSTRAP.md](BOOTSTRAP.md) — first-boot setup; requires mise + yq
