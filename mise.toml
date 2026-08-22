@@ -4,9 +4,9 @@
 # host uses mise.host.toml via `./scripts/mise.sh install` instead
 # (mise -E host, this file ignored).
 #
-# Keep the yq pin in sync with mise.host.toml.
+# Host pins (yq) live only in mise.host.toml.
 #
 # See docs/MISE.md
 
 [tools]
-yq = "4.53.3"
+shellcheck = "0.11.0"

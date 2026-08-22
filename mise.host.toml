@@ -5,7 +5,7 @@
 # file does not merge with the local toolchain in mise.toml.
 #
 # Bare `mise -E host` still loads root mise.toml — do not use that
-# as the host path. Keep the yq pin in sync with mise.toml.
+# as the host path. yq lives only here, not in root mise.toml.
 #
 # See docs/MISE.md
 
