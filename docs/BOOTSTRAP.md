@@ -46,7 +46,7 @@ Ordered install path: [INSTALLATION.md](INSTALLATION.md).
 3. **mise + yq already installed** for the admin user — bootstrap does **not** install them
 4. Run bootstrap from a directory that contains `mise.toml` (e.g. the project root)
 
-`curl` (and `git`/`rsync` if you bring the repo onto the host that way) must already be installed — see [INSTALLATION.md](INSTALLATION.md#prerequisites).
+`curl` (and `git` if you clone on the host) must already be installed — see [INSTALLATION.md](INSTALLATION.md#prerequisites).
 
 One-time tool setup (admin user, not root):
 

@@ -8,7 +8,6 @@ This page covers the two most common tools: **scp** and **rsync**. Other methods
 
 - SSH access to the host as the admin user (the account created during Debian install)
 - Host address: LAN IP, hostname, or VirtualBox NAT forward (`127.0.0.1` + port)
-- `rsync` on the **host** for the rsync examples below — Debian 13 netinst does not ship it. See [INSTALLATION.md](INSTALLATION.md#prerequisites). `scp` needs no extra package.
 - Paths below assume a clone at `~/repos/hermes-self-hosted` — adjust as needed
 
 Find the guest IP on the host:
