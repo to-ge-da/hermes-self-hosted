@@ -11,7 +11,7 @@
 # installation). This script does NOT create the admin user — only hermes.
 #
 # Tooling pre-condition: mise and pinned yq must already be available
-# (install once yourself — see docs/BOOTSTRAP.md). This script does not
+# (./scripts/mise.sh install — see docs/MISE.md). This script does not
 # install mise/yq; it fail-fast checks then configures the host.
 #
 # Configuration is YAML-only. Interactive prompts and legacy flags
@@ -191,11 +191,11 @@ resolve_config_path() {
 # Require mise + yq already available. Bootstrap does not install them.
 require_mise_yq() {
     if ! run_as_admin 'command -v mise >/dev/null 2>&1'; then
-        err "mise/yq not ready. Install mise, then run: mise install (see docs/BOOTSTRAP.md)."
+        err "mise/yq not ready. Run: ./scripts/mise.sh install (see docs/MISE.md)."
     fi
 
     if ! run_as_admin "cd $(printf '%q' "$WORK_DIR") && mise exec -- yq --version >/dev/null 2>&1"; then
-        err "mise/yq not ready. Install mise, then run: mise install (see docs/BOOTSTRAP.md)."
+        err "mise/yq not ready. Run: ./scripts/mise.sh install (see docs/MISE.md)."
     fi
 
     MISE_VERSION="$(run_as_admin 'mise --version' | head -n1 | tr -d '\r')"

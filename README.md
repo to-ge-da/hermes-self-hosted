@@ -38,7 +38,7 @@ The ordered path is in [INSTALLATION.md](docs/INSTALLATION.md).
 
 Cursor trees hosted here, not the install path. Index: [docs/forks/README.md](docs/forks/README.md).
 
-Layout: `scripts/` (bootstrap, hardening, mise helpers), `config/` (example bootstrap YAML), `templates/` (profile starters), `docs/`.
+Layout: `scripts/` (bootstrap, hardening, mise), `config/` (example bootstrap YAML), `templates/` (profile starters), `docs/`.
 
 ## Contributing
 

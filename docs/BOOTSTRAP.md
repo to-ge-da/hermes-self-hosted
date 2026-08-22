@@ -48,12 +48,11 @@ Ordered install path: [INSTALLATION.md](INSTALLATION.md).
 
 `curl` (and `git` if you clone on the host) must already be installed — see [INSTALLATION.md](INSTALLATION.md#prerequisites).
 
-One-time tool setup (admin user, not root):
+One-time tool setup (from the repo root):
 
 ```bash
-curl https://mise.run | sh
-cd /path/to/hermes-self-hosted
-mise install
+./scripts/mise.sh install
+# or: sudo ./scripts/mise.sh install --system-wide
 ```
 
 Full mise guide: [MISE.md](MISE.md).
@@ -250,7 +249,7 @@ Copy `bootstrap.sh` anywhere and inject a config:
 sudo ./bootstrap.sh --config /path/to/any-host.yaml
 ```
 
-Or place `bootstrap.yaml` next to the script. Run from a directory with `mise.toml` after `mise install` so `yq` is available. Use `config/bootstrap.example.yaml` as a format template — it is not a required path.
+Or place `bootstrap.yaml` next to the script. Run from a directory with `mise.toml` after `./scripts/mise.sh install` so `yq` is available. Use `config/bootstrap.example.yaml` as a format template — it is not a required path.
 
 ## Related
 
