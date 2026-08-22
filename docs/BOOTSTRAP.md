@@ -43,8 +43,8 @@ Ordered install path: [INSTALLATION.md](INSTALLATION.md).
 
 1. Fresh Debian Server with an admin user created during OS install
 2. A filled-in YAML config based on `config/bootstrap.example.yaml`
-3. **mise + yq already installed** for the admin user — bootstrap does **not** install them
-4. Run bootstrap from a directory that contains `mise.toml` (e.g. the project root)
+3. **mise + host yq already installed** for the admin user — bootstrap does **not** install them
+4. Run bootstrap from a directory that contains `mise.host.toml` (e.g. the project root)
 
 `curl` (and `git` if you clone on the host) must already be installed — see [INSTALLATION.md](INSTALLATION.md#prerequisites).
 
@@ -67,7 +67,7 @@ cp config/bootstrap.example.yaml ./bootstrap.yaml
 Generate an SSH key for the hermes user — see [SSH-KEYS.md](SSH-KEYS.md).  
 Copy config/keys to the host if needed — see [FILE-TRANSFER.md](FILE-TRANSFER.md).
 
-Bootstrap uses `mise exec -- yq` to parse YAML (not Debian’s apt `yq`, which is a different tool).
+Bootstrap uses `mise -E host exec -- yq` (root `mise.toml` ignored) to parse YAML — not Debian’s apt `yq`, which is a different tool. Host vs local toolchain: [MISE.md](MISE.md).
 
 ## Config
 
@@ -249,7 +249,7 @@ Copy `bootstrap.sh` anywhere and inject a config:
 sudo ./bootstrap.sh --config /path/to/any-host.yaml
 ```
 
-Or place `bootstrap.yaml` next to the script. Run from a directory with `mise.toml` after `./scripts/mise.sh install` so `yq` is available. Use `config/bootstrap.example.yaml` as a format template — it is not a required path.
+Or place `bootstrap.yaml` next to the script. Run from a directory with `mise.host.toml` after `./scripts/mise.sh install` so host `yq` is available. Use `config/bootstrap.example.yaml` as a format template — it is not a required path.
 
 ## Related
 

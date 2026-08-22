@@ -1,14 +1,12 @@
-# mise.toml — Hermes host tool manager
+# mise.toml — local toolchain (workstation / clone)
 #
-# Mise provides per-user, isolated tool installations.
-# Bootstrap.sh uses mise to manage yq (YAML parser) and other
-# dependencies without polluting the system with apt binaries.
+# Default `mise install` at the repo root. First-boot on a Debian
+# host uses mise.host.toml via `./scripts/mise.sh install` instead
+# (mise -E host, this file ignored).
 #
-# Adding tools here makes them available via `mise exec -- <tool>`
-# across the repo. Extend with Node, Python, or other runtimes as
-# needed by Hermes Agent in future phases.
+# Keep the yq pin in sync with mise.host.toml.
 #
-# See also: docs/BOOTSTRAP.md, docs/MISE.md
+# See docs/MISE.md
 
 [tools]
 yq = "4.53.3"

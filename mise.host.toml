@@ -1,0 +1,13 @@
+# mise.host.toml — host first-boot pins
+#
+# Loaded via `mise -E host`. Wrappers in scripts/mise.sh and
+# scripts/bootstrap.sh also set MISE_IGNORED_CONFIG_PATHS so this
+# file does not merge with the local toolchain in mise.toml.
+#
+# Bare `mise -E host` still loads root mise.toml — do not use that
+# as the host path. Keep the yq pin in sync with mise.toml.
+#
+# See docs/MISE.md
+
+[tools]
+yq = "4.53.3"

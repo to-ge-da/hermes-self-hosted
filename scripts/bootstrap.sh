@@ -107,10 +107,18 @@ run_as_admin() {
     sudo -u "$ADMIN_USER" -H bash -lc "export PATH=\"\$HOME/.local/bin:\$PATH\"; $*"
 }
 
+# Host pins only (mise.host.toml). Ignore root mise.toml so a laptop
+# toolchain is not pulled in. See docs/MISE.md.
+run_mise_host() {
+    # $* is a pre-quoted command fragment for bash -lc (exec -- yq …).
+    # shellcheck disable=SC2086
+    run_as_admin "cd $(printf '%q' "$WORK_DIR") && MISE_IGNORED_CONFIG_PATHS=$(printf '%q' "${WORK_DIR}/mise.toml") mise -E host $*"
+}
+
 yq_eval() {
     local expression="$1"
     local file="$2"
-    run_as_admin "cd $(printf '%q' "$WORK_DIR") && mise exec -- yq eval $(printf '%q' "$expression") $(printf '%q' "$file")"
+    run_mise_host "exec -- yq eval $(printf '%q' "$expression") $(printf '%q' "$file")"
 }
 
 # ──────────────────────
@@ -194,7 +202,7 @@ require_mise_yq() {
         err "mise/yq not ready. Run: ./scripts/mise.sh install (see docs/MISE.md)."
     fi
 
-    if ! run_as_admin "cd $(printf '%q' "$WORK_DIR") && mise exec -- yq --version >/dev/null 2>&1"; then
+    if ! run_mise_host "exec -- yq --version >/dev/null 2>&1"; then
         err "mise/yq not ready. Run: ./scripts/mise.sh install (see docs/MISE.md)."
     fi
 
