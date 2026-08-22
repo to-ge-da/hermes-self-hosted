@@ -2,6 +2,17 @@
 
 Official installation of Hermes Agent on the server. Run as the unprivileged **hermes** user (no sudo, no password) created by [bootstrap](BOOTSTRAP.md).
 
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Installer flags](#installer-flags)
+- [Gateway (24/7 access)](#gateway-247-access)
+- [Future automation](#future-automation)
+- [Custom Cursor trees](#custom-cursor-trees)
+- [Uninstall](#uninstall)
+- [Reference](#reference)
+
 ## Prerequisites
 
 - [Bootstrap](BOOTSTRAP.md) completed (users created, SSH configured) — installs Hermes system packages (`build-essential`, `python3-dev`, `libffi-dev`, `ripgrep`, `ffmpeg`)
@@ -30,7 +41,7 @@ After this bootstrap, the installer should not prompt. If it still asks for sudo
 ### Step 1: SSH in as hermes user
 
 ```bash
-ssh -i ~/.ssh/hermes_vbox hermes@<server-ip>
+ssh -i ~/.ssh/<key> hermes@<server-ip>
 # or: ssh hermes@<server-ip>
 ```
 
@@ -99,19 +110,184 @@ hermes chat -q "Hello, are you working?"
 
 ## Installer flags
 
-Show all options:
+Every option below matches live `install.sh --help` from
+https://hermes-agent.nousresearch.com/install.sh (checked 2026-08-22).
+The recommended command for this repo does **not** change.
+
+Print the live list (re-check after upstream installer updates):
 
 ```bash
 curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --help
 ```
 
+`--help` exits before install. A `curl: (23)` after the help text is the pipe
+closing — ignore it.
+
+### Recommended for this repo
+
+`--skip-setup` and `--non-interactive` together:
+
+```bash
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup --non-interactive
+```
+
+| Flag | What it does | Why this repo uses it |
+|------|--------------|------------------------|
+| `--skip-setup` | Skip the interactive provider/model wizard (`hermes setup`) | Over SSH a TTY still exists, so a plain `curl \| bash` launches the wizard |
+| `--non-interactive` | Skip stages that require user input; yes/no prompts take their default | Stops sudo/package and gateway prompts from blocking the passwordless `hermes` user |
+
+A plain `curl … | bash` (no flags) is interactive when a terminal is available.
+
+Leave every other flag at its default unless you have a reason in the sections
+below: venv on, bundled skills on, official `main`, paths under `~/.hermes`.
+
+### Reference table
+
+Purposes match `--help` wording.
+
 | Flag | Purpose |
 |------|---------|
+| `--no-venv` | Don't create a virtual environment |
 | `--skip-setup` | Skip interactive setup wizard |
+| `--skip-browser` | Skip Playwright/Chromium (browser tools won't work) |
+| `--skip-computer-use` | Skip the `cua-driver` (Computer Use) install |
+| `--no-skills` | No bundled skills; writes `$HERMES_HOME/.no-bundled-skills` so later `hermes update` also skips them |
+| `--branch NAME` | Git branch to install (default: `main`) |
+| `--commit SHA` | Pin checkout to a commit after clone/update (ignored if it would roll an existing install back) |
+| `--force-commit` | Apply `--commit` even if it rolls the install backwards |
+| `--manifest` | Print desktop bootstrap stage manifest as JSON |
+| `--stage NAME` | Run one desktop bootstrap stage |
+| `--json` | Print a JSON result frame for `--stage` |
 | `--non-interactive` | Skip stages that require user input |
-| `--dir PATH` | Installation directory (default: `~/.hermes/hermes-agent`) |
-| `--hermes-home PATH` | Data directory (default: `~/.hermes`) |
+| `--include-desktop` | Also build the desktop app (`apps/desktop` → `Hermes.app`) |
+| `--dir PATH` | Installation directory (default: `~/.hermes/hermes-agent`; as root on Linux: `/usr/local/lib/hermes-agent`) |
+| `--hermes-home PATH` | Data directory (default: `~/.hermes`, or `$HERMES_HOME`) |
+| `--ensure DEPS` | Install only listed deps, comma-separated (`node`, `browser`, `ripgrep`, `ffmpeg`). Does not clone or create a venv |
 | `-h` / `--help` | Show installer help |
+
+`--ensure` appears under **Notes** in `--help`, not under **Options**. It is a
+real flag. `--skip-browser` also accepts `--no-playwright` (same effect; not
+listed in `--help`).
+
+### Skip optional components
+
+#### `--skip-browser`
+
+Skips Playwright/Chromium and the Browser Use CLI. Browser tools will not work
+until you install them later.
+
+This repo: leave off for a full install. Add it on a headless host if you do
+not need browser tools and want a shorter run.
+
+#### `--skip-computer-use`
+
+Skips the `cua-driver` (Computer Use) install. The official installer treats a
+failed driver download as a warning and continues; you can install later with
+`hermes computer-use install`.
+
+This repo: not in the recommended command. On a headless host you may add it —
+there is no desktop to drive, and the driver install is best-effort. Leave it
+off for a full official install.
+
+#### `--no-skills`
+
+Seeds no bundled skills and writes `$HERMES_HOME/.no-bundled-skills`. Later
+`hermes update` also skips bundled skills.
+
+This repo: **do not use**. The self-hosted path expects the official skill set.
+
+#### `--no-venv`
+
+Does not create a virtual environment. The agent then uses whatever `python`
+is on `PATH`.
+
+This repo: **do not use**. The venv is the supported layout
+(`~/.hermes/hermes-agent/venv`).
+
+### Pin source
+
+Default clone is branch `main` from the official repo.
+
+#### `--branch NAME`
+
+Install that git branch instead of `main`.
+
+This repo: leave unset (official `main`). Custom Cursor trees are a different
+path — see [testing-custom-forks.md](forks/testing-custom-forks.md).
+
+#### `--commit SHA` / `--force-commit`
+
+`--commit` pins the checkout to a hex SHA (7–40 chars) after clone/update.
+If the existing install is already newer, the pin is ignored unless you also
+pass `--force-commit` (that rolls the tree backwards).
+
+This repo: leave unset unless you are reproducing a known commit.
+
+### Paths and root
+
+#### `--dir PATH` / `--hermes-home PATH`
+
+| Flag | Default (unprivileged) | What lives there |
+|------|------------------------|------------------|
+| `--dir` | `~/.hermes/hermes-agent` | Agent code + venv |
+| `--hermes-home` | `~/.hermes` (or `$HERMES_HOME`) | Config, sessions, logs, `.env` |
+
+`--dir` also honors `$HERMES_INSTALL_DIR` when you do not pass the flag.
+
+This repo: keep the defaults so docs, gateway linger, and uninstall stay aligned.
+
+#### Root / FHS (do not use here)
+
+As **root on Linux** the installer uses FHS: code in
+`/usr/local/lib/hermes-agent`, launcher in `/usr/local/bin/hermes`. Data stays
+in `$HERMES_HOME` (default `/root/.hermes`). An existing
+`$HERMES_HOME/hermes-agent` tree is left in place.
+
+This repo installs as the unprivileged `hermes` user — **do not run the
+installer as root**.
+
+### Desktop bootstrap (not used on this path)
+
+`--manifest`, `--stage NAME`, `--json`, and `--include-desktop` are the
+desktop / Hermes-Setup stage protocol. They do not replace the recommended
+CLI install on Debian.
+
+| Flag | What it does |
+|------|----------------|
+| `--manifest` | Print the stage list as JSON and exit (no install) |
+| `--stage NAME` | Run one stage and exit |
+| `--json` | After `--stage`, print a JSON result frame (`ok`, `stage`, `skipped`) |
+| `--include-desktop` | Also build `apps/desktop` → `Hermes.app` (macOS desktop app) |
+
+With `--non-interactive`, `--stage setup` and `--stage gateway` are skipped
+(those two `needs_user_input`). `--include-desktop` adds a `desktop` stage to
+the manifest.
+
+This repo: **do not use**. Headless Debian does not build `Hermes.app`.
+Gateway setup is a later step on this page, not an installer stage.
+
+### Install dependencies only
+
+`--ensure DEPS` installs **only** the listed extras and then exits. It does
+**not** clone the repo or create a venv. Comma-separated; supported values:
+`node`, `browser`, `ripgrep`, `ffmpeg`.
+
+Examples:
+
+```bash
+# Node only
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --ensure node
+
+# Several
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --ensure node,ripgrep,ffmpeg
+```
+
+`browser` needs Node first (`--ensure node` or Node already on `PATH`).
+`ripgrep` / `ffmpeg` go through the installer's apt path (needs sudo if missing).
+
+This repo: **do not use as the install**. Bootstrap already installs
+`ripgrep` and `ffmpeg` as admin. The `hermes` user has no sudo, so
+`--ensure ripgrep,ffmpeg` as `hermes` fails if those binaries are absent.
 
 ## Gateway (24/7 access)
 
