@@ -10,13 +10,13 @@ This page is a map of steps and links. Each linked guide has the full procedure.
 ## Prerequisites
 
 - Fresh Debian Server with an admin user
-- `git` and `curl` on the host — Debian 13 netinst + SSH server + standard system utilities does **not** ship them:
+- `git`, `curl`, and `rsync` on the host — Debian 13 netinst + SSH server + standard system utilities does **not** ship them:
 
   ```bash
-  sudo apt install -y git curl
+  sudo apt install -y git curl rsync
   ```
 
-  `git` clones the repo on the host; `curl` installs mise. No git: copy the repo with [FILE-TRANSFER.md](FILE-TRANSFER.md) (`rsync`/`scp`); `curl` is still required. Bootstrap installs both again later (idempotent).
+  `git` clones the repo on the host; `curl` installs mise; `rsync` is the host side of [FILE-TRANSFER.md](FILE-TRANSFER.md). `scp` works without an extra package. Bootstrap installs these again later (idempotent).
 - Repo clone on the host (or files copied over — see [FILE-TRANSFER.md](FILE-TRANSFER.md))
 - Mise + pinned tools installed for the admin user — see [MISE.md](MISE.md) and [BOOTSTRAP.md](BOOTSTRAP.md)
 

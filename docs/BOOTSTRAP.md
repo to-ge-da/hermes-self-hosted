@@ -46,7 +46,7 @@ Ordered install path: [INSTALLATION.md](INSTALLATION.md).
 3. **mise + yq already installed** for the admin user — bootstrap does **not** install them
 4. Run bootstrap from a directory that contains `mise.toml` (e.g. the project root)
 
-`curl` (and `git` if you clone on the host) must already be installed — see [INSTALLATION.md](INSTALLATION.md#prerequisites).
+`curl` (and `git`/`rsync` if you bring the repo onto the host that way) must already be installed — see [INSTALLATION.md](INSTALLATION.md#prerequisites).
 
 One-time tool setup (admin user, not root):
 
@@ -187,12 +187,13 @@ Already on the OS (not listed below): `openssh-server`, `wget`, `apt-listchanges
 
 ### Host baseline
 
-Downloads, git, unattended upgrades, and `tree`.
+Downloads, git, rsync, unattended upgrades, and `tree`.
 
 | Package | Purpose |
 |---------|---------|
 | `curl` | Downloads |
 | `git` | Version control |
+| `rsync` | File transfer (host side) |
 | `unattended-upgrades` | Auto security updates — configured in hardening |
 | `tree` | Directory listing |
 

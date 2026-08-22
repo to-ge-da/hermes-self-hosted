@@ -420,12 +420,13 @@ apt -qq autoremove -y
 # ──────────────────────
 # 3. Packages (three categories — see docs/BOOTSTRAP.md)
 # ──────────────────────
-# Host baseline: downloads, git, unattended upgrades.
+# Host baseline: downloads, git, rsync, unattended upgrades.
 # openssh-server, wget, apt-listchanges, iproute2, and sudo are already on
 # Debian 13 netinst + SSH + standard utilities. ufw is installed in hardening.sh.
 apt_install "host baseline packages" \
     curl \
     git \
+    rsync \
     unattended-upgrades \
     tree
 
