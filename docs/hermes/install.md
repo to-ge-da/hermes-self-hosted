@@ -77,7 +77,7 @@ hermes doctor
 
 `PATH` already includes `~/.local/bin` from bootstrap (`/etc/profile.d/00-local-bin.sh`).
 
-`hermes doctor` may show Playwright red. The agent itself is installed — that is a browser-engine gap, not a failed Hermes install. Enable later in [Playwright / Chromium](#playwright--chromium), or ignore it if you used `--skip-browser`.
+`hermes doctor` may show Playwright red. The agent itself is installed — that is a browser-engine gap, not a failed Hermes install. Enable it with [Playwright / Chromium](#playwright--chromium), or ignore it if you used `--skip-browser`.
 
 ### Step 4: Set up provider and model
 
@@ -113,9 +113,21 @@ cd ~/.hermes/hermes-agent && npx playwright install chromium
 sudo npx playwright install-deps chromium
 ```
 
-Do **not** run the first command to “enable” the browser. That is the hang: Playwright **1.58.2** + bundled Node **26** sits on `extracting archive` (~10 min), then still prints `Browser engine setup complete`.
+Do **not** run the first command. That is the hang: Playwright **1.58.2** + bundled Node **26** sits on `extracting archive` (~10 min), then still prints `Browser engine setup complete`.
 
-`--skip-browser` is the recommended install. Stop here unless you need browser tools. Recovery notes: #81. Upstream: [hermes-agent#91478](https://github.com/NousResearch/hermes-agent/pull/91478), [hermes-agent#76312](https://github.com/NousResearch/hermes-agent/issues/76312).
+Enable the browser with this repo script instead — from the clone, as **hermes** then **admin**:
+
+```bash
+# as hermes — reuse cache or unpack/download the zip (never npx extract)
+./scripts/playwright.sh
+
+# as admin — OS libraries only
+sudo ./scripts/playwright.sh --deps
+```
+
+Then as `hermes`: `hermes doctor` — look for `Playwright Chromium (browser engine)`. `--help` documents who runs which part.
+
+`--skip-browser` is the recommended install. Stop here unless you need browser tools. Upstream: [hermes-agent#91478](https://github.com/NousResearch/hermes-agent/pull/91478), [hermes-agent#76312](https://github.com/NousResearch/hermes-agent/issues/76312).
 
 ## Installer flags
 
@@ -144,7 +156,7 @@ curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-
 |------|--------------|------------------------|
 | `--skip-setup` | Skip the interactive provider/model wizard (`hermes setup`) | Over SSH a TTY still exists, so a plain `curl \| bash` launches the wizard |
 | `--non-interactive` | Yes/no prompts take their default; `--stage setup` / `--stage gateway` are skipped | So a yes/no cannot sit waiting on the SSH session. Does not skip the setup wizard (`--skip-setup`) and does not run `sudo` |
-| `--skip-browser` | Skip Playwright/Chromium and the Browser Use CLI | Playwright 1.58.2 + Node 26 hangs ~10 min on extract. Enable later; do not run the installer’s `npx playwright install chromium` |
+| `--skip-browser` | Skip Playwright/Chromium and the Browser Use CLI | Playwright 1.58.2 + Node 26 hangs ~10 min on extract. Enable later with `scripts/playwright.sh`; do not run the installer’s `npx playwright install chromium` |
 
 A plain `curl … | bash` (no flags) is interactive when a terminal is available.
 
@@ -189,8 +201,8 @@ until you install them later.
 This repo: **use it** (recommended command). Official Playwright 1.58.2 +
 bundled Node 26 hangs on `extracting archive` (~10 min), then still prints
 `Browser engine setup complete`. After skip, the installer tells you to run
-`npx playwright install chromium` — that is the same hang. See
-[Playwright / Chromium](#playwright--chromium).
+`npx playwright install chromium` — that is the same hang. Use
+`scripts/playwright.sh` instead. See [Playwright / Chromium](#playwright--chromium).
 
 #### `--skip-computer-use`
 
