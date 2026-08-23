@@ -205,7 +205,7 @@ Default clone is branch `main` from the official repo.
 Install that git branch instead of `main`.
 
 This repo: leave unset (official `main`). Custom Cursor trees are a different
-path — see [testing-custom-forks.md](forks/testing-custom-forks.md).
+path — see [testing-custom-forks.md](../forks/testing-custom-forks.md).
 
 #### `--commit SHA` / `--force-commit`
 
@@ -328,7 +328,7 @@ do not share `~/.hermes` with a fork checkout.
 ## Uninstall
 
 To stop the gateway and remove the agent, config, and data, see
-[hermes-uninstall.md](hermes-uninstall.md).
+[uninstall.md](uninstall.md).
 
 ## Reference
 

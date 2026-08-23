@@ -172,7 +172,7 @@ Store the archive **outside** `~/.hermes` (for example `~/` or another disk).
 
 ### Restore (after reinstall)
 
-1. Reinstall Hermes ([INSTALL-HERMES.md](INSTALL-HERMES.md)).
+1. Reinstall Hermes ([install.md](install.md)).
 2. Restore data:
 
 ```bash
@@ -222,7 +222,7 @@ hermes uninstall --dry-run
 
 After a clean removal:
 
-1. Follow [INSTALL-HERMES.md](INSTALL-HERMES.md) (official installer + gateway).
+1. Follow [install.md](install.md) (official installer + gateway).
 2. Or use the upstream one-liner:
 
 ```bash
