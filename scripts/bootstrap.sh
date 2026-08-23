@@ -216,7 +216,8 @@ ensure_local_bin_dir() {
 }
 
 # docker.io creates the group. hermes has no sudo — membership is how
-# they run the CLI. New login required for the group to apply.
+# they run the CLI. Admin is added too so both host users can docker
+# without sudo. New login required for the group to apply.
 ensure_user_in_group() {
     local user="$1"
     local group="$2"
@@ -601,7 +602,8 @@ apt_install "Hermes Agent system packages" \
     ffmpeg
 
 # Official install.sh does not install Docker. Debian docker.io (not the
-# vendor repo). hermes is added to the docker group after the user exists.
+# vendor repo). admin and hermes join the docker group after the hermes
+# user exists.
 apt_install "Docker packages" docker.io
 if systemctl list-unit-files --type=service --no-legend 2>/dev/null | grep -q '^docker.service'; then
     systemctl enable --now docker
@@ -673,6 +675,7 @@ else
 fi
 
 ensure_local_bin_dir "$HERMES_USER"
+ensure_user_in_group "$ADMIN_USER" docker
 ensure_user_in_group "$HERMES_USER" docker
 
 # ──────────────────────
@@ -745,10 +748,10 @@ echo -e "  ${BOLD}Hostname${NC}  : ${CYAN}${NEW_HOSTNAME}${NC}"
 echo -e "  ${BOLD}Timezone${NC}  : ${CYAN}${TZ}${NC}"
 echo -e "  ${BOLD}Config${NC}    : ${CYAN}${CONFIG_PATH}${NC}"
 echo ""
-echo -e "  ${BOLD}Admin${NC}  : ${GREEN}${ADMIN_USER}${NC} (pre-existing, sudo)"
+echo -e "  ${BOLD}Admin${NC}  : ${GREEN}${ADMIN_USER}${NC} (pre-existing, sudo, docker group)"
 echo -e "  ${BOLD}Agent${NC}  : ${GREEN}${HERMES_USER}${NC} (no sudo, key-only, docker group)"
 echo -e "  ${BOLD}PATH${NC}   : ${CYAN}${PROFILE_D_LOCAL_BIN}${NC}"
-echo -e "  ${BOLD}Docker${NC} : ${CYAN}docker.io${NC} (re-login as ${HERMES_USER} for the group)"
+echo -e "  ${BOLD}Docker${NC} : ${CYAN}docker.io${NC} (re-login as ${ADMIN_USER} / ${HERMES_USER} for the group)"
 echo -e "  ${BOLD}State${NC}  : ${CYAN}${STATE_FILE}${NC}"
 echo ""
 echo -e "${YELLOW}Next steps:${NC}"
