@@ -1,8 +1,13 @@
 # SSH Keys for Hermes
 
-The `hermes` agent user is **key-only** (password locked). Generate a key on your
-workstation, put the **public** key in bootstrap config, keep the **private** key
-on the workstation, and connect with `ssh -i`.
+Generate a key on your workstation, put the **public** key in bootstrap
+config, keep the **private** key on the workstation, and connect with
+`ssh -i`.
+
+Bootstrap installs that **same** public key on the admin user (`$SUDO_USER`)
+and on `hermes` so hardening can `AllowUsers` both accounts. No extra
+`authorized_keys` step. Existing keys are left in place; the config key is
+appended only if that type+blob is missing.
 
 See also: [BOOTSTRAP.md](BOOTSTRAP.md), [FILE-TRANSFER.md](FILE-TRANSFER.md).
 
@@ -37,17 +42,15 @@ if you use the standard `id_ed25519` / `id_rsa` names).
 **Option A — inline** (in `bootstrap.yaml`):
 
 ```yaml
-hermes:
-  user: hermes
-  ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... hermes@laptop"
+ssh:
+  public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... hermes@laptop"
 ```
 
 **Option B — file on the host** (copy the `.pub` with scp/rsync first):
 
 ```yaml
-hermes:
-  user: hermes
-  ssh_public_key_file: /home/agentx/.ssh/hermes_vbox.pub
+ssh:
+  public_key_file: /home/agentx/.ssh/hermes_vbox.pub
 ```
 
 Do **not** put the private key in YAML. Do **not** commit real keys.
@@ -56,16 +59,19 @@ Do **not** put the private key in YAML. Do **not** commit real keys.
 
 ```bash
 ssh -i ~/.ssh/hermes_vbox hermes@HOST
+ssh -i ~/.ssh/hermes_vbox admin@HOST
 ```
 
-## Replace a bad or old authorized_keys
+## Remove or replace a key
 
-Bootstrap **skips** SSH key install if `/home/hermes/.ssh/authorized_keys` already
-exists and is non-empty. To replace:
+Bootstrap **appends** the config key if that type+blob is not already in
+`authorized_keys` (admin or hermes). It does not delete other keys.
+
+To drop a key, edit or remove that line:
 
 ```bash
-sudo rm /home/hermes/.ssh/authorized_keys
-sudo ./scripts/bootstrap.sh --config ./bootstrap.yaml
+sudo "${EDITOR:-nano}" /home/hermes/.ssh/authorized_keys
+sudo "${EDITOR:-nano}" /home/<admin>/.ssh/authorized_keys
 ```
 
 Verify on the host (admin needs `sudo` — hermes’s home is not world-readable):
@@ -73,4 +79,5 @@ Verify on the host (admin needs `sudo` — hermes’s home is not world-readable
 ```bash
 sudo cat /home/hermes/.ssh/authorized_keys
 sudo ssh-keygen -lf /home/hermes/.ssh/authorized_keys
+sudo ssh-keygen -lf ~/.ssh/authorized_keys
 ```

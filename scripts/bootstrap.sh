@@ -46,9 +46,7 @@ MISE_VERSION=""
 CFG_HOSTNAME=""
 CFG_TIMEZONE=""
 CFG_HERMES_USER=""
-CFG_SSH_PUBLIC_KEY=""
-CFG_SSH_PUBLIC_KEY_FILE=""
-HERMES_SSH_KEY=""
+SSH_PUBLIC_KEY=""
 PREVIOUS_HOSTNAME=""
 
 # ──────────────────────
@@ -71,6 +69,71 @@ show_banner() {
 log()  { echo -e "${GREEN}[BOOTSTRAP]${NC} $1"; }
 warn() { echo -e "${YELLOW}[BOOTSTRAP]${NC} $1"; }
 err()  { echo -e "${RED}[BOOTSTRAP]${NC} $1" >&2; exit 1; }
+
+# Type + blob only (ignore the optional trailing comment).
+ssh_key_identity() {
+    awk '{print $1, $2}' <<< "$1"
+}
+
+# Read first line of a public-key file into SSH_PUBLIC_KEY. Expands ~ to $ADMIN_HOME.
+read_ssh_public_key_file() {
+    local raw="$1"
+    local key_file="$raw"
+    local key
+    if [[ "$key_file" == ~* ]]; then
+        key_file="${key_file/#\~/$ADMIN_HOME}"
+    fi
+    [[ -f "$key_file" ]] || err "Config error: ssh public key file not found: $raw"
+    [[ -r "$key_file" ]] || err "Config error: ssh public key file not readable: $raw"
+    key="$(tr -d '\r' < "$key_file" | head -n1)"
+    validate_ssh_public_key "$key"
+    SSH_PUBLIC_KEY="$key"
+}
+
+# Append a public key to user/.ssh/authorized_keys if type+blob is not
+# already present. Never deletes other keys.
+install_authorized_key() {
+    local user="$1"
+    local home="$2"
+    local key="$3"
+    local keys="${home}/.ssh/authorized_keys"
+    local key_id line existing_id fingerprint
+
+    [[ -n "$key" ]] || return 0
+
+    key_id="$(ssh_key_identity "$key")"
+    [[ -n "$key_id" ]] || err "Internal error: could not parse SSH public key identity."
+
+    mkdir -p "${home}/.ssh"
+    chmod 700 "${home}/.ssh"
+
+    if [[ -f "$keys" && -s "$keys" ]]; then
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ -z "$line" || "$line" == \#* ]]; then
+                continue
+            fi
+            existing_id="$(ssh_key_identity "$line")"
+            if [[ "$existing_id" == "$key_id" ]]; then
+                log "SSH key already present for $user — not adding a duplicate."
+                chown -R "${user}:${user}" "${home}/.ssh"
+                return 0
+            fi
+        done < "$keys"
+        if [[ -n "$(tail -c 1 "$keys" || true)" ]]; then
+            printf '\n' >> "$keys"
+        fi
+    fi
+
+    printf '%s\n' "$key" >> "$keys"
+    chmod 600 "$keys"
+    chown -R "${user}:${user}" "${home}/.ssh"
+
+    fingerprint="$(printf '%s\n' "$key" | ssh-keygen -lf - 2>/dev/null | awk '{print $1,$2,$4}' || true)"
+    log "SSH key added for $user (from config)."
+    if [[ -n "$fingerprint" ]]; then
+        log "authorized_keys fingerprint: $fingerprint"
+    fi
+}
 
 usage() {
     cat <<EOF
@@ -307,8 +370,12 @@ load_and_validate_config() {
     CFG_HOSTNAME="$(yq_str '.hostname')"
     CFG_TIMEZONE="$(yq_str '.timezone')"
     CFG_HERMES_USER="$(yq_str '.hermes.user')"
-    CFG_SSH_PUBLIC_KEY="$(yq_str '.hermes.ssh_public_key')"
-    CFG_SSH_PUBLIC_KEY_FILE="$(yq_str '.hermes.ssh_public_key_file')"
+
+    local new_inline new_file old_inline old_file
+    new_inline="$(yq_str '.ssh.public_key')"
+    new_file="$(yq_str '.ssh.public_key_file')"
+    old_inline="$(yq_str '.hermes.ssh_public_key')"
+    old_file="$(yq_str '.hermes.ssh_public_key_file')"
 
     [[ -n "$CFG_TIMEZONE" ]] || CFG_TIMEZONE="$DEFAULT_TIMEZONE"
     [[ -n "$CFG_HERMES_USER" ]] || CFG_HERMES_USER="$DEFAULT_HERMES_USER"
@@ -316,27 +383,45 @@ load_and_validate_config() {
     validate_hostname "$CFG_HOSTNAME"
     validate_timezone "$CFG_TIMEZONE"
 
-    if [[ -n "$CFG_SSH_PUBLIC_KEY" && -n "$CFG_SSH_PUBLIC_KEY_FILE" ]]; then
-        err "Config error: Both ssh_public_key and ssh_public_key_file are set.
-Choose one or the other — not both."
+    local new_set=0 old_set=0
+    if [[ -n "$new_inline" || -n "$new_file" ]]; then
+        new_set=1
+    fi
+    if [[ -n "$old_inline" || -n "$old_file" ]]; then
+        old_set=1
     fi
 
-    if [[ -n "$CFG_SSH_PUBLIC_KEY_FILE" ]]; then
-        local key_file="$CFG_SSH_PUBLIC_KEY_FILE"
-        # Expand ~ for admin home if present
-        if [[ "$key_file" == ~* ]]; then
-            key_file="${key_file/#\~/$ADMIN_HOME}"
+    if (( new_set && old_set )); then
+        err "Config error: both ssh.* and hermes.ssh_public_key* are set.
+Use ssh.public_key or ssh.public_key_file only — do not mix with the old hermes fields."
+    fi
+
+    SSH_PUBLIC_KEY=""
+    if (( new_set )); then
+        if [[ -n "$new_inline" && -n "$new_file" ]]; then
+            err "Config error: Both ssh.public_key and ssh.public_key_file are set.
+Choose one or the other — not both."
         fi
-        [[ -f "$key_file" ]] || err "Config error: ssh_public_key_file not found: $CFG_SSH_PUBLIC_KEY_FILE"
-        [[ -r "$key_file" ]] || err "Config error: ssh_public_key_file not readable: $CFG_SSH_PUBLIC_KEY_FILE"
-        HERMES_SSH_KEY="$(tr -d '\r' < "$key_file" | head -n1)"
-        validate_ssh_public_key "$HERMES_SSH_KEY"
-    elif [[ -n "$CFG_SSH_PUBLIC_KEY" ]]; then
-        HERMES_SSH_KEY="$CFG_SSH_PUBLIC_KEY"
-        validate_ssh_public_key "$HERMES_SSH_KEY"
+        if [[ -n "$new_file" ]]; then
+            read_ssh_public_key_file "$new_file"
+        else
+            SSH_PUBLIC_KEY="$new_inline"
+            validate_ssh_public_key "$SSH_PUBLIC_KEY"
+        fi
+    elif (( old_set )); then
+        warn "hermes.ssh_public_key / hermes.ssh_public_key_file moved to ssh.public_key / ssh.public_key_file."
+        if [[ -n "$old_inline" && -n "$old_file" ]]; then
+            err "Config error: Both hermes.ssh_public_key and hermes.ssh_public_key_file are set.
+Choose one or the other — not both."
+        fi
+        if [[ -n "$old_file" ]]; then
+            read_ssh_public_key_file "$old_file"
+        else
+            SSH_PUBLIC_KEY="$old_inline"
+            validate_ssh_public_key "$SSH_PUBLIC_KEY"
+        fi
     else
-        warn "Neither hermes.ssh_public_key nor hermes.ssh_public_key_file is set. SSH key setup will be skipped."
-        HERMES_SSH_KEY=""
+        warn "Neither ssh.public_key nor ssh.public_key_file is set. SSH key setup will be skipped."
     fi
 
     log "Config validated (hostname=$CFG_HOSTNAME timezone=$CFG_TIMEZONE hermes.user=$CFG_HERMES_USER)."
@@ -562,34 +647,30 @@ fi
 ensure_local_bin_dir "$HERMES_USER"
 
 # ──────────────────────
-# 10. Hermes SSH key (from config)
+# 10. SSH keys from config (hermes + admin)
 # ──────────────────────
-log "Setting up SSH for $HERMES_USER..."
+# One host public key (ssh.public_key[_file], or the hermes.* alias).
+# Admin gets it so hardening can AllowUsers the sudo user.
+HERMES_HOME="$(getent passwd "$HERMES_USER" | cut -d: -f6)"
+if [[ -z "$HERMES_HOME" || ! -d "$HERMES_HOME" ]]; then
+    HERMES_HOME="/home/${HERMES_USER}"
+fi
 
-if [[ -f "/home/$HERMES_USER/.ssh/authorized_keys" ]] && [[ -s "/home/$HERMES_USER/.ssh/authorized_keys" ]]; then
-    warn "authorized_keys already exists and is non-empty — not replacing."
-    warn "To install the key from config: sudo rm /home/$HERMES_USER/.ssh/authorized_keys && re-run bootstrap."
+if [[ -n "$SSH_PUBLIC_KEY" ]]; then
+    log "Setting up SSH for $HERMES_USER..."
+    install_authorized_key "$HERMES_USER" "$HERMES_HOME" "$SSH_PUBLIC_KEY"
+    log "Setting up SSH for $ADMIN_USER..."
+    install_authorized_key "$ADMIN_USER" "$ADMIN_HOME" "$SSH_PUBLIC_KEY"
 else
-    mkdir -p "/home/$HERMES_USER/.ssh"
-    chmod 700 "/home/$HERMES_USER/.ssh"
-
-    if [[ -n "$HERMES_SSH_KEY" ]]; then
-        echo "$HERMES_SSH_KEY" > "/home/$HERMES_USER/.ssh/authorized_keys"
-        chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
-        chown -R "$HERMES_USER:" "/home/$HERMES_USER/.ssh"
-        local_fp="$(ssh-keygen -lf "/home/$HERMES_USER/.ssh/authorized_keys" 2>/dev/null | awk '{print $1,$2,$4}' || true)"
-        log "SSH key added for $HERMES_USER (from config)."
-        if [[ -n "$local_fp" ]]; then
-            log "authorized_keys fingerprint: $local_fp"
-        fi
-    else
-        warn "No SSH key in config for $HERMES_USER. Skipping key setup."
-        warn "Generate a key (see docs/SSH-KEYS.md), then add it to config and re-run, or:"
-        warn "  echo 'ssh-ed25519 AAAA...' | sudo tee /home/$HERMES_USER/.ssh/authorized_keys"
-        touch "/home/$HERMES_USER/.ssh/authorized_keys"
-        chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
-        chown -R "$HERMES_USER:" "/home/$HERMES_USER/.ssh"
-    fi
+    warn "No SSH key in config for $HERMES_USER. Skipping key setup."
+    warn "Generate a key (see docs/SSH-KEYS.md), then add it to config and re-run, or:"
+    warn "  echo 'ssh-ed25519 AAAA...' | sudo tee ${HERMES_HOME}/.ssh/authorized_keys"
+    mkdir -p "${HERMES_HOME}/.ssh"
+    chmod 700 "${HERMES_HOME}/.ssh"
+    touch "${HERMES_HOME}/.ssh/authorized_keys"
+    chmod 600 "${HERMES_HOME}/.ssh/authorized_keys"
+    chown -R "${HERMES_USER}:${HERMES_USER}" "${HERMES_HOME}/.ssh"
+    warn "No SSH key in config — not writing authorized_keys for $ADMIN_USER."
 fi
 
 # ──────────────────────

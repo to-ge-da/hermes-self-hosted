@@ -17,17 +17,24 @@ hostname: hermes-server
 timezone: America/Sao_Paulo
 
 # ─────────────────────────────────────────────────────────────
+# Host SSH public key (admin + hermes)
+# ─────────────────────────────────────────────────────────────
+# One key, two users. Bootstrap appends this public key to
+# authorized_keys for the admin ($SUDO_USER) and hermes when
+# that type+blob is not already present.
+#
+# Choose ONE: inline key OR file path. Setting both is an error.
+#
+# Option A — inline key:
+ssh:
+  public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL0Gj..."
+  #
+  # Option B — file path:
+  # public_key_file: /home/admin/.ssh/id_ed25519.pub
+
+# ─────────────────────────────────────────────────────────────
 # Hermes agent user
 # ─────────────────────────────────────────────────────────────
 hermes:
   # User account name for the Hermes Agent (optional, default: "hermes")
   user: hermes
-
-  # ── SSH public key ────────────────────────────────────────
-  # Choose ONE: inline key OR file path. Setting both is an error.
-  #
-  # Option A — inline key:
-  ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL0Gj..."
-  #
-  # Option B — file path:
-  # ssh_public_key_file: /home/admin/.ssh/hermes.pub
