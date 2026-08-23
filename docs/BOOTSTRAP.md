@@ -77,7 +77,7 @@ Bootstrap uses `mise -E host exec -- yq` (root `mise.toml` ignored) to parse YAM
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `hostname` | string | yes | — | Desired server hostname |
-| `timezone` | string | no | `"UTC"` | Valid TZ identifier (e.g. `America/Sao_Paulo`) |
+| `timezone` | string | no | `"UTC"` | Valid IANA TZ identifier (`timedatectl list-timezones`) |
 | `ssh.public_key` | string | no* | — | Inline host SSH public key (admin + hermes) |
 | `ssh.public_key_file` | string | no* | — | Path to an SSH public key file |
 | `hermes.user` | string | no | `hermes` | Hermes agent system account name |
@@ -90,7 +90,7 @@ Old `hermes.ssh_public_key` / `hermes.ssh_public_key_file` still work as a read 
 
 ```yaml
 hostname: hermes-server
-timezone: America/Sao_Paulo
+timezone: UTC
 ssh:
   public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL0Gj..."
 hermes:
