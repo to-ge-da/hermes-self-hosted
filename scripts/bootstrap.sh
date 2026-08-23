@@ -147,7 +147,7 @@ ensure_local_bin_dir() {
     [[ -n "$home" && -d "$home" ]] || err "Could not resolve home for '$user'."
 
     mkdir -p "$home/.local/bin"
-    chown "$user:$user" "$home/.local" "$home/.local/bin"
+    chown "$user:" "$home/.local" "$home/.local/bin"
     chmod 755 "$home/.local/bin"
     log "$user: $home/.local/bin ready."
 }

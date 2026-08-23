@@ -127,6 +127,21 @@ Enable lingering so the gateway survives logout (run as admin):
 sudo loginctl enable-linger hermes
 ```
 
+## Future automation
+
+A dedicated `install-hermes.sh` script may be added later to wrap the **non-interactive** official installer:
+
+```bash
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup --non-interactive
+```
+
+and extend it with:
+
+- Pre-configured API keys
+- Gateway auto-start as a systemd user service
+- Pre-loaded skills for the target environment
+- Config file templating
+
 ## Custom Cursor trees
 
 This page is **official Nous only**. For `to-ge-da/hermes-agent` (legacy) or
