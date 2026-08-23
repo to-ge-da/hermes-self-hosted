@@ -14,7 +14,7 @@ hostname: hermes-server
 # ─────────────────────────────────────────────────────────────
 # Timezone (must be a valid TZ identifier)
 # ─────────────────────────────────────────────────────────────
-timezone: America/Sao_Paulo
+timezone: UTC
 
 # ─────────────────────────────────────────────────────────────
 # Host SSH public key (admin + hermes)
