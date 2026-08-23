@@ -55,22 +55,14 @@ Layout after install:
 | Data / config | `~/.hermes/` |
 | CLI launcher | `~/.local/bin/hermes` |
 
-### Step 3: Reload PATH and verify
-
-Ensure `~/.local/bin` is on `PATH`, then verify:
+### Step 3: Verify
 
 ```bash
-source ~/.bashrc   # or open a new SSH session
 hermes --version
 hermes doctor
 ```
 
-If `hermes: command not found`, add to `~/.bashrc`:
-
-```bash
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
+`PATH` already includes `~/.local/bin` from bootstrap (`/etc/profile.d/00-local-bin.sh`).
 
 ### Step 4: Set up provider and model
 

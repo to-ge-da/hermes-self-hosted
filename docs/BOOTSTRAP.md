@@ -140,8 +140,9 @@ Legacy flags (`--hostname`, `--timezone`, `--ssh-key`) and interactive prompts a
 | Hostname | From config |
 | Timezone | From config (default `UTC`) |
 | Locale | `en_US.UTF-8` |
-| Admin user | Detected via `$SUDO_USER` — no changes made |
-| Hermes user | Creates agent user from config (default `hermes`, no sudo, key-only) |
+| User PATH | Writes `/etc/profile.d/00-local-bin.sh` — every login user gets `~/.local/bin` on `PATH` |
+| Admin user | Detected via `$SUDO_USER`; creates `~/.local/bin` |
+| Hermes user | Creates agent user from config (default `hermes`, no sudo, key-only); creates `~/.local/bin` |
 | SSH key | From `hermes.ssh_public_key` or `hermes.ssh_public_key_file` |
 | Root lock | Locks root account |
 | SSH drop-in dir | Creates `/etc/ssh/sshd_config.d/` |
@@ -171,7 +172,7 @@ MISE_VERSION=2024.x.x
 ```
 
 - **CONFIG_HASH** — SHA-256 of config **file contents** (not the path); changes are logged on re-run  
-- **Idempotency** — hostname / user / SSH key steps skip when already applied  
+- **Idempotency** — hostname / user / SSH key / `00-local-bin.sh` steps skip when already applied
 - **Partial runs** — state is written only on success  
 
 ### Legacy migration
@@ -220,6 +221,14 @@ Prepare the host for [INSTALL-HERMES.md](INSTALL-HERMES.md) so the official inst
 |------|------|----------|------|
 | `<admin>` (`$SUDO_USER`) | Yes (from OS install) | As configured during Debian install | SSH key / as installed |
 | `hermes` (or config override) | No | Disabled | SSH key from config |
+
+Bootstrap writes `/etc/profile.d/00-local-bin.sh` once:
+
+```bash
+export PATH="${HOME}/.local/bin:${PATH}"
+```
+
+SSH logins pick it up. Why the `00-` prefix: [MISE.md](MISE.md).
 
 ## After running
 
