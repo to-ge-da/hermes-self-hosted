@@ -9,7 +9,7 @@ It exists to turn a bare Debian install into a consistent base:
 - Apply hostname, timezone, and locale from a YAML config
 - Install packages in three groups (host baseline, network stack, Hermes deps)
 - Create the **hermes** agent user (key-only SSH, no sudo by default)
-- Install that user’s SSH public key from config
+- Install one host SSH public key on **admin and hermes** (append if missing)
 - Lock the root account and ensure SSH drop-in config dir exists
 - Record a state file so re-runs are safe and idempotent
 
@@ -61,7 +61,7 @@ Copy the example and edit (do **not** commit real keys):
 
 ```bash
 cp config/bootstrap.example.yaml ./bootstrap.yaml
-# edit hostname, timezone, hermes.ssh_public_key (or ssh_public_key_file)
+# edit hostname, timezone, ssh.public_key (or ssh.public_key_file)
 ```
 
 Generate an SSH key for the hermes user — see [SSH-KEYS.md](SSH-KEYS.md).  
@@ -77,20 +77,23 @@ Bootstrap uses `mise -E host exec -- yq` (root `mise.toml` ignored) to parse YAM
 |---|---|---|---|---|
 | `hostname` | string | yes | — | Desired server hostname |
 | `timezone` | string | no | `"UTC"` | Valid TZ identifier (e.g. `America/Sao_Paulo`) |
+| `ssh.public_key` | string | no* | — | Inline host SSH public key (admin + hermes) |
+| `ssh.public_key_file` | string | no* | — | Path to an SSH public key file |
 | `hermes.user` | string | no | `hermes` | Hermes agent system account name |
-| `hermes.ssh_public_key` | string | no* | — | Inline SSH public key |
-| `hermes.ssh_public_key_file` | string | no* | — | Path to an SSH public key file |
 
-**\*Mutual exclusivity:** Choose exactly one of `ssh_public_key` or `ssh_public_key_file`. Setting both is an error. Setting neither skips SSH key setup (warning); the hermes user will not have key-based SSH until a key is added.
+**\*Mutual exclusivity:** Choose exactly one of `ssh.public_key` or `ssh.public_key_file`. Setting both is an error. Setting neither skips SSH key setup (warning); neither user will have the config key until one is added.
+
+Old `hermes.ssh_public_key` / `hermes.ssh_public_key_file` still work as a read alias (bootstrap warns). Do not set both generations at once.
 
 ### Example
 
 ```yaml
 hostname: hermes-server
 timezone: America/Sao_Paulo
+ssh:
+  public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL0Gj..."
 hermes:
   user: hermes
-  ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL0Gj..."
 ```
 
 ### Validation (summary)
@@ -143,7 +146,7 @@ Legacy flags (`--hostname`, `--timezone`, `--ssh-key`) and interactive prompts a
 | User PATH | Writes `/etc/profile.d/00-local-bin.sh` — every login user gets `~/.local/bin` on `PATH` |
 | Admin user | Detected via `$SUDO_USER` — existing account, not created; creates `~/.local/bin` |
 | Hermes user | Creates agent user from config (default `hermes`, no sudo, key-only); creates `~/.local/bin` |
-| SSH key | Same config key (`hermes.ssh_public_key` or `ssh_public_key_file`) on **hermes and admin** |
+| SSH key | Same host key (`ssh.public_key` or `ssh.public_key_file`) appended on **hermes and admin** if missing |
 | Root lock | Locks root account |
 | SSH drop-in dir | Creates `/etc/ssh/sshd_config.d/` |
 | State file | Writes `~/.hermes-self-hosted/bootstrap.state` |
@@ -219,8 +222,8 @@ Prepare the host for [install.md](hermes/install.md) so the official installer d
 
 | User | Sudo | Password | Auth |
 |------|------|----------|------|
-| `<admin>` (`$SUDO_USER`) | Yes (from OS install) | As configured during Debian install | Same SSH key as hermes (from config), unless `authorized_keys` already existed |
-| `hermes` (or config override) | No | Disabled | SSH key from config |
+| `<admin>` (`$SUDO_USER`) | Yes (from OS install) | As configured during Debian install | Same host SSH key as hermes (appended if not already present) |
+| `hermes` (or config override) | No | Disabled | Same host SSH key from config |
 
 Bootstrap writes `/etc/profile.d/00-local-bin.sh` once:
 
@@ -246,7 +249,7 @@ sudo cat /home/hermes/.ssh/authorized_keys
 sudo ssh-keygen -lf /home/hermes/.ssh/authorized_keys
 ```
 
-If key install was skipped because `authorized_keys` already existed, remove it and re-run — see [SSH-KEYS.md](SSH-KEYS.md).
+Bootstrap **appends** the config key when that type+blob is missing; it does not replace other keys. To remove a key, edit `authorized_keys` — see [SSH-KEYS.md](SSH-KEYS.md).
 
 Then proceed to [HARDENING.md](HARDENING.md).
 
