@@ -368,7 +368,7 @@ migrate_legacy_state() {
 
     log "Legacy state detected at $LEGACY_STATE_FILE — migrating to $STATE_FILE."
     mkdir -p "$STATE_DIR"
-    chown "$ADMIN_USER:$ADMIN_USER" "$STATE_DIR"
+    chown "$ADMIN_USER:" "$STATE_DIR"
 
     local old_completed old_script_version old_hostname old_admin old_hermes
     old_completed="$(state_get "$LEGACY_STATE_FILE" COMPLETED_AT)"
@@ -387,7 +387,7 @@ PREVIOUS_HOSTNAME=${old_hostname}
 CONFIG_HASH=
 MISE_VERSION=
 EOF
-    chown "$ADMIN_USER:$ADMIN_USER" "$STATE_FILE"
+    chown "$ADMIN_USER:" "$STATE_FILE"
     chmod 644 "$STATE_FILE"
 
     if rm -f "$LEGACY_STATE_FILE"; then
@@ -416,7 +416,7 @@ load_bootstrap_state() {
 
 write_bootstrap_state() {
     mkdir -p "$STATE_DIR"
-    chown "$ADMIN_USER:$ADMIN_USER" "$STATE_DIR"
+    chown "$ADMIN_USER:" "$STATE_DIR"
     cat > "$STATE_FILE" <<EOF
 COMPLETED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 SCRIPT_VERSION=${SCRIPT_VERSION}
@@ -427,7 +427,7 @@ PREVIOUS_HOSTNAME=${PREVIOUS_HOSTNAME}
 CONFIG_HASH=${CONFIG_HASH}
 MISE_VERSION=${MISE_VERSION}
 EOF
-    chown "$ADMIN_USER:$ADMIN_USER" "$STATE_FILE"
+    chown "$ADMIN_USER:" "$STATE_FILE"
     chmod 644 "$STATE_FILE"
     log "Bootstrap state written to $STATE_FILE."
 }
@@ -576,7 +576,7 @@ else
     if [[ -n "$HERMES_SSH_KEY" ]]; then
         echo "$HERMES_SSH_KEY" > "/home/$HERMES_USER/.ssh/authorized_keys"
         chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
-        chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
+        chown -R "$HERMES_USER:" "/home/$HERMES_USER/.ssh"
         local_fp="$(ssh-keygen -lf "/home/$HERMES_USER/.ssh/authorized_keys" 2>/dev/null | awk '{print $1,$2,$4}' || true)"
         log "SSH key added for $HERMES_USER (from config)."
         if [[ -n "$local_fp" ]]; then
@@ -588,7 +588,7 @@ else
         warn "  echo 'ssh-ed25519 AAAA...' | sudo tee /home/$HERMES_USER/.ssh/authorized_keys"
         touch "/home/$HERMES_USER/.ssh/authorized_keys"
         chmod 600 "/home/$HERMES_USER/.ssh/authorized_keys"
-        chown -R "$HERMES_USER:$HERMES_USER" "/home/$HERMES_USER/.ssh"
+        chown -R "$HERMES_USER:" "/home/$HERMES_USER/.ssh"
     fi
 fi
 
