@@ -215,6 +215,24 @@ ensure_local_bin_dir() {
     log "$user: $home/.local/bin ready."
 }
 
+# docker.io creates the group. hermes has no sudo — membership is how
+# they run the CLI. New login required for the group to apply.
+ensure_user_in_group() {
+    local user="$1"
+    local group="$2"
+
+    getent group "$group" >/dev/null \
+        || err "Group '$group' does not exist (expected after installing docker.io)."
+
+    if id -nG "$user" | grep -qw "$group"; then
+        log "$user already in $group group."
+        return 0
+    fi
+
+    usermod -aG "$group" "$user"
+    log "Added $user to $group group (new login required)."
+}
+
 # Host pins only (mise.host.toml). Ignore root mise.toml so a laptop
 # toolchain is not pulled in. See docs/MISE.md.
 run_mise_host() {
@@ -556,7 +574,7 @@ apt -qq upgrade -y
 apt -qq autoremove -y
 
 # ──────────────────────
-# 3. Packages (three categories — see docs/BOOTSTRAP.md)
+# 3. Packages (four categories — see docs/BOOTSTRAP.md)
 # ──────────────────────
 # Host baseline: downloads, git, rsync, unattended upgrades.
 # openssh-server, wget, apt-listchanges, iproute2, and sudo are already on
@@ -581,6 +599,16 @@ apt_install "Hermes Agent system packages" \
     libffi-dev \
     ripgrep \
     ffmpeg
+
+# Official install.sh does not install Docker. Debian docker.io (not the
+# vendor repo). hermes is added to the docker group after the user exists.
+apt_install "Docker packages" docker.io
+if systemctl list-unit-files --type=service --no-legend 2>/dev/null | grep -q '^docker.service'; then
+    systemctl enable --now docker
+    log "Docker service enabled and started."
+else
+    warn "docker.service not found after installing docker.io."
+fi
 
 # ──────────────────────
 # 4. Hostname (from config)
@@ -645,6 +673,7 @@ else
 fi
 
 ensure_local_bin_dir "$HERMES_USER"
+ensure_user_in_group "$HERMES_USER" docker
 
 # ──────────────────────
 # 10. SSH keys from config (hermes + admin)
@@ -717,8 +746,9 @@ echo -e "  ${BOLD}Timezone${NC}  : ${CYAN}${TZ}${NC}"
 echo -e "  ${BOLD}Config${NC}    : ${CYAN}${CONFIG_PATH}${NC}"
 echo ""
 echo -e "  ${BOLD}Admin${NC}  : ${GREEN}${ADMIN_USER}${NC} (pre-existing, sudo)"
-echo -e "  ${BOLD}Agent${NC}  : ${GREEN}${HERMES_USER}${NC} (no sudo, key-only)"
+echo -e "  ${BOLD}Agent${NC}  : ${GREEN}${HERMES_USER}${NC} (no sudo, key-only, docker group)"
 echo -e "  ${BOLD}PATH${NC}   : ${CYAN}${PROFILE_D_LOCAL_BIN}${NC}"
+echo -e "  ${BOLD}Docker${NC} : ${CYAN}docker.io${NC} (re-login as ${HERMES_USER} for the group)"
 echo -e "  ${BOLD}State${NC}  : ${CYAN}${STATE_FILE}${NC}"
 echo ""
 echo -e "${YELLOW}Next steps:${NC}"

@@ -7,8 +7,8 @@
 It exists to turn a bare Debian install into a consistent base:
 
 - Apply hostname, timezone, and locale from a YAML config
-- Install packages in three groups (host baseline, network stack, Hermes deps)
-- Create the **hermes** agent user (key-only SSH, no sudo by default)
+- Install packages in four groups (host baseline, network stack, Hermes deps, Docker)
+- Create the **hermes** agent user (key-only SSH, no sudo by default; `docker` group)
 - Install one host SSH public key on **admin and hermes** (append if missing)
 - Lock the root account and ensure SSH drop-in config dir exists
 - Record a state file so re-runs are safe and idempotent
@@ -139,13 +139,13 @@ Legacy flags (`--hostname`, `--timezone`, `--ssh-key`) and interactive prompts a
 | Preflight | Resolves config; requires mise + yq (no tool installs) |
 | Config load | Parses and validates the YAML config |
 | System update | `apt update && apt upgrade` |
-| Packages | Three apt groups — see [Packages](#packages) |
+| Packages | Four apt groups (including `docker.io`) — see [Packages](#packages) |
 | Hostname | From config |
 | Timezone | From config (default `UTC`) |
 | Locale | `en_US.UTF-8` |
 | User PATH | Writes `/etc/profile.d/00-local-bin.sh` — every login user gets `~/.local/bin` on `PATH` |
 | Admin user | Detected via `$SUDO_USER` — existing account, not created; creates `~/.local/bin` |
-| Hermes user | Creates agent user from config (default `hermes`, no sudo, key-only); creates `~/.local/bin` |
+| Hermes user | Creates agent user from config (default `hermes`, no sudo, key-only); `docker` group; creates `~/.local/bin` |
 | SSH key | Same host key (`ssh.public_key` or `ssh.public_key_file`) appended on **hermes and admin** if missing |
 | Root lock | Locks root account |
 | SSH drop-in dir | Creates `/etc/ssh/sshd_config.d/` |
@@ -175,7 +175,7 @@ MISE_VERSION=2024.x.x
 ```
 
 - **CONFIG_HASH** — SHA-256 of config **file contents** (not the path); changes are logged on re-run  
-- **Idempotency** — hostname / user / SSH key / `00-local-bin.sh` steps skip when already applied
+- **Idempotency** — hostname / user / SSH key / `00-local-bin.sh` / docker group steps skip when already applied
 - **Partial runs** — state is written only on success  
 
 ### Legacy migration
@@ -184,9 +184,9 @@ If `/var/lib/hermes-self-hosted/bootstrap.state` exists, bootstrap migrates it t
 
 ## Packages
 
-Three `apt` groups. Only packages missing from Debian 13 netinst + SSH server + standard system utilities.
+Four `apt` groups. Only packages missing from Debian 13 netinst + SSH server + standard system utilities.
 
-Already on the OS (not listed below): `openssh-server`, `wget`, `apt-listchanges`, `iproute2`, `sudo`. `ufw` is installed by [HARDENING.md](HARDENING.md).
+Already on the OS (not listed below): `openssh-server`, `wget`, `apt-listchanges`, `iproute2`, `sudo`. `ufw` is installed by [HARDENING.md](HARDENING.md). The official Hermes installer does **not** install Docker.
 
 ### Host baseline
 
@@ -218,12 +218,22 @@ Prepare the host for [install.md](hermes/install.md) so the official installer d
 | `build-essential`, `python3-dev`, `libffi-dev` | Python build deps (unprivileged install) |
 | `ripgrep`, `ffmpeg` | Optional tools the installer looks for (fast search, TTS) |
 
+### Docker
+
+Debian `docker.io` (engine + CLI). Not the Docker Inc. vendor repo. `hermes` is added to the `docker` group so the CLI works without sudo after a new login.
+
+| Package | Purpose |
+|---------|---------|
+| `docker.io` | Docker engine and CLI for container work on the host |
+
+`systemctl enable --now docker` runs after the package install. Group membership is applied after the hermes user exists.
+
 ## Users after bootstrap
 
-| User | Sudo | Password | Auth |
-|------|------|----------|------|
-| `<admin>` (`$SUDO_USER`) | Yes (from OS install) | As configured during Debian install | Same host SSH key as hermes (appended if not already present) |
-| `hermes` (or config override) | No | Disabled | Same host SSH key from config |
+| User | Sudo | Password | Auth | Extra groups |
+|------|------|----------|------|--------------|
+| `<admin>` (`$SUDO_USER`) | Yes (from OS install) | As configured during Debian install | Same host SSH key as hermes (appended if not already present) | — |
+| `hermes` (or config override) | No | Disabled | Same host SSH key from config | `docker` |
 
 Bootstrap writes `/etc/profile.d/00-local-bin.sh` once:
 
@@ -250,6 +260,8 @@ sudo ssh-keygen -lf /home/hermes/.ssh/authorized_keys
 ```
 
 Bootstrap **appends** the config key when that type+blob is missing; it does not replace other keys. To remove a key, edit `authorized_keys` — see [SSH-KEYS.md](SSH-KEYS.md).
+
+Docker: after a **new login** as `hermes`, `docker version` (or `docker info`) works without sudo. An existing session will not see the `docker` group until you reconnect.
 
 Then proceed to [HARDENING.md](HARDENING.md).
 
