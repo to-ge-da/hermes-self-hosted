@@ -18,11 +18,11 @@ This page is a map of steps and links. Each linked guide has the full procedure.
 
   `git` clones the repo on the host; `curl` installs mise. No git: copy the repo with [FILE-TRANSFER.md](FILE-TRANSFER.md) (`scp`). `curl` is still required. Bootstrap installs both again later (idempotent).
 - Repo clone on the host (or files copied over — see [FILE-TRANSFER.md](FILE-TRANSFER.md))
-- Mise + host pins installed for the admin user — see [MISE.md](MISE.md) (`./scripts/mise.sh install`, uses `mise.host.toml`)
+- Mise + host pins installed — see [MISE.md](MISE.md). Method 1: `./scripts/mise.sh install` (admin user only). Method 2: `sudo ./scripts/mise.sh install --system-wide` (shared `/usr/local/bin/mise` + `profile.d`). Uses `mise.host.toml`.
 
 ## Install order (self-hosted)
 
-1. **Mise host tools (prerequisite)** — `./scripts/mise.sh install` so bootstrap can use host-pinned `yq` (`mise.host.toml`, not the local toolchain). Add `--system-wide` (with sudo) to activate mise for all users on login. See [MISE.md](MISE.md).
+1. **Mise host tools (prerequisite)** — `./scripts/mise.sh install` so bootstrap can use host-pinned `yq` (`mise.host.toml`, not the local toolchain). That is method 1 (admin user only). For a shared binary that every login user can see: `sudo ./scripts/mise.sh install --system-wide` (`/usr/local/bin/mise` + `profile.d`). See [MISE.md](MISE.md).
 2. **File transfer (as needed)** — Copy config, keys, or the repo to the host with `scp` / `rsync`. See [FILE-TRANSFER.md](FILE-TRANSFER.md).
 3. **Bootstrap** — Config-driven first-boot setup (`hostname`, hermes user, SSH keys). See [`scripts/bootstrap.sh`](../scripts/bootstrap.sh) and [BOOTSTRAP.md](BOOTSTRAP.md).
 4. **Hardening** — Firewall, kernel, auditd, SSH lockdown. See [`scripts/hardening.sh`](../scripts/hardening.sh) and [HARDENING.md](HARDENING.md).

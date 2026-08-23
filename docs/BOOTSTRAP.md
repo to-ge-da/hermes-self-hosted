@@ -53,10 +53,11 @@ One-time tool setup (from the repo root):
 
 ```bash
 ./scripts/mise.sh install
-# or: sudo ./scripts/mise.sh install --system-wide
+# or method 2 (shared /usr/local/bin/mise + profile.d):
+# sudo ./scripts/mise.sh install --system-wide
 ```
 
-Full mise guide: [MISE.md](MISE.md).
+Full mise guide: [MISE.md](MISE.md). Method 1 is enough for bootstrap (`yq` for `$SUDO_USER`). Method 2 is what other login users need to see `mise`.
 
 Copy the example and edit (do **not** commit real keys):
 
@@ -279,7 +280,7 @@ Or place `bootstrap.yaml` next to the script. Run from a directory with `mise.ho
 ## Related
 
 - [INSTALLATION.md](INSTALLATION.md) — ordered self-hosted path  
-- [MISE.md](MISE.md) — mise install, system-wide activation, uninstall  
+- [MISE.md](MISE.md) — mise install (per-user or shared binary), system-wide `profile.d`, uninstall  
 - [SSH-KEYS.md](SSH-KEYS.md) — generate keys for the hermes user  
 - [FILE-TRANSFER.md](FILE-TRANSFER.md) — copy config/keys to the host  
 - [HARDENING.md](HARDENING.md) — next step after bootstrap  
