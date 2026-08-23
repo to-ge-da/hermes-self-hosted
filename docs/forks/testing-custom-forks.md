@@ -4,7 +4,7 @@ Official Hermes (Nous) still has **no in-tree Cursor provider**. Until that
 lands, `to-ge-da` keeps **two** trees. This guide is how to pick one, install
 it, isolate it, and update it.
 
-Official host install (no Cursor): [INSTALL-HERMES.md](../INSTALL-HERMES.md).  
+Official host install (no Cursor): [install.md](../hermes/install.md).  
 Why Cursor is forked at all: [cursor-integration-research.md](cursor-integration-research.md)
 (July 2026 research — read the status box at the top before the tables).
 
@@ -14,7 +14,7 @@ Why Cursor is forked at all: [cursor-integration-research.md](cursor-integration
 |---|---|---|---|---|
 | [to-ge-da/hermes-agent](https://github.com/to-ge-da/hermes-agent) | **Fork** of `NousResearch/hermes-agent` | Frozen ~v0.19.0 (Jul 2026) + lawmight runtime | Cursor **drives** the turn (`api_mode=cursor_agent`) | Legacy instance already running this checkout |
 | [to-ge-da/hermes-agent-sdk](https://github.com/to-ge-da/hermes-agent-sdk) | Regular repo (**not** a fork) | Latest Nous `main` + [Nous #88212](https://github.com/NousResearch/hermes-agent/pull/88212) | Hermes stays the harness; `cursor-sdk` only infers | **New instances** — best Hermes + Cursor token spend |
-| [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) | Upstream | Latest | No native Cursor | Default path in [INSTALL-HERMES.md](../INSTALL-HERMES.md) |
+| [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) | Upstream | Latest | No native Cursor | Default path in [install.md](../hermes/install.md) |
 
 `hermes-agent-sdk` is the line that moves. `hermes-agent` stays frozen except
 Cursor-runtime hotfixes (meter, recycle). Do not rebase the legacy tree onto
@@ -191,7 +191,7 @@ Prefix commands with `uv run`, or `source .venv/bin/activate`. For a global
 
 | Tree | How |
 |---|---|
-| Official install | `hermes update` — see [INSTALL-HERMES.md](../INSTALL-HERMES.md) |
+| Official install | `hermes update` — see [install.md](../hermes/install.md) |
 | `hermes-agent` (legacy) | **Do not** `hermes update` against Nous. Cherry-pick only Cursor runtime fixes onto `feat/cursor-native-integration`. |
 | `hermes-agent-sdk` | Fetch Nous `main`, rebase/replay the Cursor commits, push `origin`. |
 
@@ -301,8 +301,8 @@ git remote -v && git log -1 --oneline
 
 ## Related
 
-- Official install: [INSTALL-HERMES.md](../INSTALL-HERMES.md)
-- Uninstall: [hermes-uninstall.md](../hermes-uninstall.md)
+- Official install: [install.md](../hermes/install.md)
+- Uninstall: [uninstall.md](../hermes/uninstall.md)
 - Mise: [MISE.md](../MISE.md)
 - Smoke test: [SMOKE_TEST](#smoke_test)
 - Cursor catalog helper: [`scripts/tools/list-cursor-models.sh`](../../scripts/tools/list-cursor-models.sh)

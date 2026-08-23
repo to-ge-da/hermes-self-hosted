@@ -21,8 +21,8 @@ Uninstalling Hermes Agent removes:
 | Gateway systemd user unit | `~/.config/systemd/user/hermes-gateway.service` |
 
 It does **not** remove the OS `hermes` user created by bootstrap, SSH keys,
-firewall rules, or mise. Those are host setup — see [BOOTSTRAP.md](BOOTSTRAP.md),
-[MISE.md](MISE.md), and [HARDENING.md](HARDENING.md).
+firewall rules, or mise. Those are host setup — see [BOOTSTRAP.md](../BOOTSTRAP.md),
+[MISE.md](../MISE.md), and [HARDENING.md](../HARDENING.md).
 
 **Preferred path:** use the built-in CLI when it still works:
 
@@ -172,7 +172,7 @@ Store the archive **outside** `~/.hermes` (for example `~/` or another disk).
 
 ### Restore (after reinstall)
 
-1. Reinstall Hermes ([INSTALL-HERMES.md](INSTALL-HERMES.md)).
+1. Reinstall Hermes ([install.md](install.md)).
 2. Restore data:
 
 ```bash
@@ -222,7 +222,7 @@ hermes uninstall --dry-run
 
 After a clean removal:
 
-1. Follow [INSTALL-HERMES.md](INSTALL-HERMES.md) (official installer + gateway).
+1. Follow [install.md](install.md) (official installer + gateway).
 2. Or use the upstream one-liner:
 
 ```bash
