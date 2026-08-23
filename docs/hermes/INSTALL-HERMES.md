@@ -1,6 +1,6 @@
 # Install Hermes Agent
 
-Official installation of Hermes Agent on the server. Run as the unprivileged **hermes** user (no sudo, no password) created by [bootstrap](BOOTSTRAP.md).
+Official installation of Hermes Agent on the server. Run as the unprivileged **hermes** user (no sudo, no password) created by [bootstrap](../BOOTSTRAP.md).
 
 ## Contents
 
@@ -15,13 +15,13 @@ Official installation of Hermes Agent on the server. Run as the unprivileged **h
 
 ## Prerequisites
 
-- [Bootstrap](BOOTSTRAP.md) completed (users created, SSH configured) — installs Hermes system packages (`build-essential`, `python3-dev`, `libffi-dev`, `ripgrep`, `ffmpeg`)
-- [Hardening](HARDENING.md) completed (system secured) — recommended for production; VM smoke tests may skip
+- [Bootstrap](../BOOTSTRAP.md) completed (users created, SSH configured) — installs Hermes system packages (`build-essential`, `python3-dev`, `libffi-dev`, `ripgrep`, `ffmpeg`)
+- [Hardening](../HARDENING.md) completed (system secured) — recommended for production; VM smoke tests may skip
 - Server has internet access
 
 ### System packages (from bootstrap)
 
-[Bootstrap](BOOTSTRAP.md) installs the apt packages the official installer would otherwise try to add via `sudo`. The `hermes` user has **no password and no sudo**, so those prompts would block or fail.
+[Bootstrap](../BOOTSTRAP.md) installs the apt packages the official installer would otherwise try to add via `sudo`. The `hermes` user has **no password and no sudo**, so those prompts would block or fail.
 
 | Package set | Why | How the installer detects them |
 |-------------|-----|--------------------------------|
@@ -322,7 +322,7 @@ and extend it with:
 
 This page is **official Nous only**. For `to-ge-da/hermes-agent` (legacy) or
 `to-ge-da/hermes-agent-sdk` (latest + #88212), see
-[testing-custom-forks.md](forks/testing-custom-forks.md). One instance per host;
+[testing-custom-forks.md](../forks/testing-custom-forks.md). One instance per host;
 do not share `~/.hermes` with a fork checkout.
 
 ## Uninstall

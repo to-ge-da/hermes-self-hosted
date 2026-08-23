@@ -35,8 +35,8 @@ If you run Hermes as the `hermes` system user, that path is typically `/home/her
 
 Template sources in this repository:
 
-- [`templates/USER.md.template`](../templates/USER.md.template)
-- [`templates/MEMORY.md.template`](../templates/MEMORY.md.template)
+- [`templates/USER.md.template`](../../templates/USER.md.template)
+- [`templates/MEMORY.md.template`](../../templates/MEMORY.md.template)
 
 ## Why they matter
 

@@ -21,8 +21,8 @@ Uninstalling Hermes Agent removes:
 | Gateway systemd user unit | `~/.config/systemd/user/hermes-gateway.service` |
 
 It does **not** remove the OS `hermes` user created by bootstrap, SSH keys,
-firewall rules, or mise. Those are host setup — see [BOOTSTRAP.md](BOOTSTRAP.md),
-[MISE.md](MISE.md), and [HARDENING.md](HARDENING.md).
+firewall rules, or mise. Those are host setup — see [BOOTSTRAP.md](../BOOTSTRAP.md),
+[MISE.md](../MISE.md), and [HARDENING.md](../HARDENING.md).
 
 **Preferred path:** use the built-in CLI when it still works:
 

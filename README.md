@@ -20,7 +20,7 @@ The ordered path is in [INSTALLATION.md](docs/INSTALLATION.md).
 | [SSH-KEYS.md](docs/SSH-KEYS.md) | SSH keys for the hermes user |
 | [HARDENING.md](docs/HARDENING.md) | Security hardening |
 | [NETWORK.md](docs/NETWORK.md) | Static IP and DNS |
-| [INSTALL-HERMES.md](docs/INSTALL-HERMES.md) | Hermes Agent install |
+| [INSTALL-HERMES.md](docs/hermes/INSTALL-HERMES.md) | Hermes Agent install |
 | [FILE-TRANSFER.md](docs/FILE-TRANSFER.md) | Copy files to the host |
 | [MISE.md](docs/MISE.md) | Mise tools |
 
@@ -28,9 +28,9 @@ The ordered path is in [INSTALLATION.md](docs/INSTALLATION.md).
 
 | Doc | Topic |
 |---|---|
-| [hermes-uninstall.md](docs/hermes-uninstall.md) | Remove Hermes Agent |
-| [profile-templates.md](docs/profile-templates.md) | USER.md / MEMORY.md starters |
-| [hermes-dashboard-service.md](docs/hermes-dashboard-service.md) | Dashboard as a background service |
+| [hermes-uninstall.md](docs/hermes/hermes-uninstall.md) | Remove Hermes Agent |
+| [profile-templates.md](docs/hermes/profile-templates.md) | USER.md / MEMORY.md starters |
+| [hermes-dashboard-service.md](docs/hermes/hermes-dashboard-service.md) | Dashboard as a background service |
 | [GITHUB_TEMPLATES.md](docs/GITHUB_TEMPLATES.md) | Issue and PR templates |
 | [AGENTS.md](AGENTS.md) | Repo conventions |
 

@@ -22,7 +22,7 @@ Conventions for this repo.
 
 ## Docs
 
-Markdown in `docs/`. Cursor trees in `docs/forks/`.
+Markdown in `docs/`. Hermes Agent guides in `docs/hermes/`. Cursor trees in `docs/forks/`.
 
 ## Testing
 

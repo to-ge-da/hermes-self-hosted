@@ -20,7 +20,7 @@ Bootstrap is **not**:
 | Concern | Where it lives |
 |---|---|
 | Security hardening (firewall, SSH lockdown, kernel) | [HARDENING.md](HARDENING.md) / `hardening.sh` |
-| Installing Hermes Agent or the gateway | [INSTALL-HERMES.md](INSTALL-HERMES.md) |
+| Installing Hermes Agent or the gateway | [INSTALL-HERMES.md](hermes/INSTALL-HERMES.md) |
 | Installing or activating mise | [MISE.md](MISE.md) (bootstrap only *requires* mise + yq already present) |
 
 Ordered install path: [INSTALLATION.md](INSTALLATION.md).
@@ -208,7 +208,7 @@ Tools for the Hermes host. Debian already ships `iproute2` (`ip`, `ss`); this gr
 
 ### Hermes Agent system packages
 
-Prepare the host for [INSTALL-HERMES.md](INSTALL-HERMES.md) so the official installer does not prompt the passwordless `hermes` user for `sudo`.
+Prepare the host for [INSTALL-HERMES.md](hermes/INSTALL-HERMES.md) so the official installer does not prompt the passwordless `hermes` user for `sudo`.
 
 | Package | Purpose |
 |---------|---------|
