@@ -104,9 +104,7 @@ Make mise-managed tools available to **all users** on login — no per-session `
 1. Adds mise shims to `PATH`
 2. Runs `mise activate bash` when `mise` is on `PATH`
 
-User-local tools (`~/.local/bin`) are **not** this file’s job. Bootstrap writes `/etc/profile.d/00-local-bin.sh` (see [BOOTSTRAP.md](BOOTSTRAP.md)). The `00-` prefix sources it **before** `mise.sh`, so `mise activate` snapshots a PATH that already has `~/.local/bin`. Debian’s `~/.profile` adds that path too late — the prompt hook (`hook-env`) rebuilds from the snapshot and would drop it.
-
-`system-wide --remove` deletes `mise.sh` only. `00-local-bin.sh` stays.
+`~/.local/bin` is bootstrap’s job (`00-local-bin.sh`, see [BOOTSTRAP.md](BOOTSTRAP.md)). The `00-` prefix runs before `mise.sh` so `mise activate` keeps that path. `--remove` deletes `mise.sh` only.
 
 Works for SSH, console logins, and `sudo -i` without editing each user’s `~/.bashrc`.
 

@@ -228,9 +228,7 @@ Bootstrap writes `/etc/profile.d/00-local-bin.sh` once:
 export PATH="${HOME}/.local/bin:${PATH}"
 ```
 
-Unconditional — the directory may appear mid-session; bash ignores a missing entry. The `00-` prefix sources it before `/etc/profile.d/mise.sh`, so `mise activate` snapshots a PATH that already has `~/.local/bin`. A later `adduser` inherits this on login; no bootstrap re-run.
-
-`profile.d` is login shells only (SSH, console, `sudo -i`). Cron, systemd units, and `curl | bash` do not see it.
+SSH logins pick it up. Why the `00-` prefix: [MISE.md](MISE.md).
 
 ## After running
 
