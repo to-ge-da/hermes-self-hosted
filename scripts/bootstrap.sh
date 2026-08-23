@@ -31,6 +31,7 @@ SCRIPT_VERSION="2.0.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK_DIR="$(pwd)"
 LEGACY_STATE_FILE="/var/lib/hermes-self-hosted/bootstrap.state"
+PROFILE_D_LOCAL_BIN="/etc/profile.d/00-local-bin.sh"
 
 # ──────────────────────
 # State (resolved after ADMIN_USER is known)
@@ -105,6 +106,50 @@ apt_install() {
 # Run a command as ADMIN_USER with a login-like env and mise on PATH.
 run_as_admin() {
     sudo -u "$ADMIN_USER" -H bash -lc "export PATH=\"\$HOME/.local/bin:\$PATH\"; $*"
+}
+
+# Host-level PATH for user-local tools. 00- so this sources before mise.sh;
+# activate then snapshots a PATH that already has ~/.local/bin. Unconditional
+# export: the directory may appear mid-session; bash ignores a missing entry.
+write_profile_d_local_bin() {
+    local tmp
+
+    [[ -d /etc/profile.d ]] || err "/etc/profile.d/ does not exist."
+
+    tmp="$(mktemp)"
+    cat > "$tmp" <<'EOF'
+# /etc/profile.d/00-local-bin.sh — user-local tools on PATH
+#
+# Sourced by Bourne-compatible login shells, before mise.sh (00- prefix).
+# Unconditional: the directory may appear mid-session; bash ignores a
+# missing PATH entry. Owned by bootstrap, not mise.
+
+export PATH="${HOME}/.local/bin:${PATH}"
+EOF
+
+    if [[ -f "$PROFILE_D_LOCAL_BIN" ]] && cmp -s "$tmp" "$PROFILE_D_LOCAL_BIN"; then
+        rm -f "$tmp"
+        log "$PROFILE_D_LOCAL_BIN already present."
+        return 0
+    fi
+
+    cat "$tmp" > "$PROFILE_D_LOCAL_BIN"
+    chmod 644 "$PROFILE_D_LOCAL_BIN"
+    rm -f "$tmp"
+    log "Wrote $PROFILE_D_LOCAL_BIN (new login sessions pick it up)."
+}
+
+# Optional first-boot comfort. PATH policy does not depend on this.
+ensure_local_bin_dir() {
+    local user="$1"
+    local home
+    home="$(getent passwd "$user" | cut -d: -f6)"
+    [[ -n "$home" && -d "$home" ]] || err "Could not resolve home for '$user'."
+
+    mkdir -p "$home/.local/bin"
+    chown "$user:$user" "$home/.local" "$home/.local/bin"
+    chmod 755 "$home/.local/bin"
+    log "$user: $home/.local/bin ready."
 }
 
 # Host pins only (mise.host.toml). Ignore root mise.toml so a laptop
@@ -491,12 +536,18 @@ else
 fi
 
 # ──────────────────────
-# 7. Admin user (already resolved)
+# 7. User-local PATH (all login users)
 # ──────────────────────
-log "Admin user: $ADMIN_USER (pre-existing from Debian installation)"
+write_profile_d_local_bin
 
 # ──────────────────────
-# 8. Hermes agent user
+# 8. Admin user (already resolved)
+# ──────────────────────
+log "Admin user: $ADMIN_USER (pre-existing from Debian installation)"
+ensure_local_bin_dir "$ADMIN_USER"
+
+# ──────────────────────
+# 9. Hermes agent user
 # ──────────────────────
 log "Creating hermes user ($HERMES_USER)..."
 
@@ -508,8 +559,10 @@ else
     log "User '$HERMES_USER' created (key-only auth, no password, no sudo)."
 fi
 
+ensure_local_bin_dir "$HERMES_USER"
+
 # ──────────────────────
-# 9. Hermes SSH key (from config)
+# 10. Hermes SSH key (from config)
 # ──────────────────────
 log "Setting up SSH for $HERMES_USER..."
 
@@ -540,7 +593,7 @@ else
 fi
 
 # ──────────────────────
-# 10. SSH directory for sshd_config.d
+# 11. SSH directory for sshd_config.d
 # ──────────────────────
 if [[ ! -d /etc/ssh/sshd_config.d ]]; then
     mkdir -p /etc/ssh/sshd_config.d
@@ -548,7 +601,7 @@ if [[ ! -d /etc/ssh/sshd_config.d ]]; then
 fi
 
 # ──────────────────────
-# 11. Lock root account
+# 12. Lock root account
 # ──────────────────────
 if passwd -S root 2>/dev/null | grep -q " L "; then
     log "Root account already locked, skipping."
@@ -584,6 +637,7 @@ echo -e "  ${BOLD}Config${NC}    : ${CYAN}${CONFIG_PATH}${NC}"
 echo ""
 echo -e "  ${BOLD}Admin${NC}  : ${GREEN}${ADMIN_USER}${NC} (pre-existing, sudo)"
 echo -e "  ${BOLD}Agent${NC}  : ${GREEN}${HERMES_USER}${NC} (no sudo, key-only)"
+echo -e "  ${BOLD}PATH${NC}   : ${CYAN}${PROFILE_D_LOCAL_BIN}${NC}"
 echo -e "  ${BOLD}State${NC}  : ${CYAN}${STATE_FILE}${NC}"
 echo ""
 echo -e "${YELLOW}Next steps:${NC}"

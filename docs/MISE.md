@@ -104,9 +104,13 @@ Make mise-managed tools available to **all users** on login — no per-session `
 1. Adds mise shims to `PATH`
 2. Runs `mise activate bash` when `mise` is on `PATH`
 
+User-local tools (`~/.local/bin`) are **not** this file’s job. Bootstrap writes `/etc/profile.d/00-local-bin.sh` (see [BOOTSTRAP.md](BOOTSTRAP.md)). The `00-` prefix sources it **before** `mise.sh`, so `mise activate` snapshots a PATH that already has `~/.local/bin`. Debian’s `~/.profile` adds that path too late — the prompt hook (`hook-env`) rebuilds from the snapshot and would drop it.
+
+`system-wide --remove` deletes `mise.sh` only. `00-local-bin.sh` stays.
+
 Works for SSH, console logins, and `sudo -i` without editing each user’s `~/.bashrc`.
 
-Bootstrap does **not** depend on this.
+Bootstrap does **not** depend on system-wide mise.
 
 ### Enable
 
@@ -136,7 +140,7 @@ which yq
 sudo ./scripts/mise.sh system-wide --remove
 ```
 
-Deletes `/etc/profile.d/mise.sh`. Takes effect in new login sessions. Does **not** uninstall mise or its tools.
+Deletes `/etc/profile.d/mise.sh`. Takes effect in new login sessions. Does **not** uninstall mise or its tools, and does **not** remove `00-local-bin.sh`.
 
 ### Manual per-user alternative
 
@@ -175,6 +179,7 @@ Then open a new login session so PATH no longer references mise shims.
 | Symptom | Likely cause | Solution |
 |---|---|---|
 | Bootstrap: mise/yq not ready | Tools not installed for `$SUDO_USER` | `./scripts/mise.sh install` |
+| Login PATH is only mise shims + `/usr/bin` (no `~/.local/bin`) | Missing `/etc/profile.d/00-local-bin.sh`, or it sourced after `mise.sh` | Re-run bootstrap (plants the `00-` file), then a new login |
 | Tools missing in new SSH session | `profile.d` not sourced | Use a login shell; confirm Bourne-compatible shell |
 | `mise: command not found` at login | Binary gone but `profile.d` remains | `sudo ./scripts/mise.sh system-wide --remove` |
 | PATH still has mise after uninstall | System-wide file left behind | Same `--remove` step, then new login |
@@ -183,7 +188,8 @@ Then open a new login session so PATH no longer references mise shims.
 
 - The official installer runs as the admin user (`$SUDO_USER` under sudo), never as root — binary lands in `~/.local/bin`
 - `/etc/profile.d/` scripts are sourced during login shell init
-- `${HOME}` in `profile.d/mise.sh` expands per user at runtime
+- `${HOME}` in `profile.d/*.sh` expands per user at runtime
+- `~/.local/bin` is owned by bootstrap (`00-local-bin.sh`), not `mise.sh`
 - `mise activate` is guarded with `command -v mise`
 - System-wide file permissions: `644`
 - Prefer `profile.d` over editing `/etc/profile` directly

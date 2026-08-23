@@ -39,9 +39,12 @@ ssh -i ~/.ssh/hermes_vbox hermes@<server-ip>
 Recommended for this repo — fully automated, no setup wizard:
 
 ```bash
+mkdir -p ~/.local/bin
+export PATH="$HOME/.local/bin:$PATH"
 curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup --non-interactive
 ```
 
+- `mkdir` + `export PATH` — `curl | bash` is not a login shell, so `/etc/profile.d/00-local-bin.sh` does not run. The export silences the `uv` PATH warning and leaves `hermes` usable in this session.
 - `--skip-setup` — skips the interactive provider/model wizard (needed over SSH: a TTY still exists even with `curl | bash`)
 - `--non-interactive` — skips installer stages that need user input
 
@@ -55,22 +58,24 @@ Layout after install:
 | Data / config | `~/.hermes/` |
 | CLI launcher | `~/.local/bin/hermes` |
 
-### Step 3: Reload PATH and verify
+### Step 3: Verify
 
-Ensure `~/.local/bin` is on `PATH`, then verify:
+If you exported `PATH` in Step 2, `hermes` is already available in this session. A new SSH login picks up `~/.local/bin` from `/etc/profile.d/00-local-bin.sh` (written by bootstrap).
 
 ```bash
-source ~/.bashrc   # or open a new SSH session
 hermes --version
 hermes doctor
 ```
 
-If `hermes: command not found`, add to `~/.bashrc`:
+If `hermes: command not found` in **this** session:
 
 ```bash
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
+export PATH="$HOME/.local/bin:$PATH"
+hermes --version
+hermes doctor
 ```
+
+If a **new** login still lacks `~/.local/bin`, the host is missing `00-local-bin.sh` — re-run bootstrap as admin (see [BOOTSTRAP.md](BOOTSTRAP.md)). Do not append the export to `~/.bashrc`.
 
 ### Step 4: Set up provider and model
 
