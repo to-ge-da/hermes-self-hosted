@@ -7,7 +7,7 @@ Server security hardening. Run **after** [bootstrap](BOOTSTRAP.md).
 | Category | What it applies |
 |----------|----------------|
 | SSH | Key-only auth, no root login, rate limiting |
-| Firewall | UFW — deny inbound, allow only SSH (22/tcp) |
+| Firewall | UFW — deny inbound, allow SSH (22/tcp); ping stays allowed via UFW `before.rules` |
 | Brute-force | Fail2Ban — 3 attempts, 1h ban |
 | Auto-updates | Unattended security upgrades (no auto-reboot) |
 | Kernel | 16 sysctl parameters (ASLR, SYN cookies, pointer restrictions, etc.) |
