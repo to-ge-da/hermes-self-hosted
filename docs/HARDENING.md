@@ -18,7 +18,6 @@ Server security hardening. Run **after** [bootstrap](BOOTSTRAP.md).
 | Rootkits | rkhunter with updated signatures |
 | File permissions | `/root` 700, `/etc/shadow` 600, crontab restricted to root |
 | Shared memory | `/dev/shm` mounted noexec, nosuid, nodev |
-| Services | Disable avahi, cups, nfs, rpcbind, bluetooth |
 
 ## Usage
 

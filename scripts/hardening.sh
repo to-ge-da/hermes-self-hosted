@@ -14,7 +14,6 @@
 #   - AppArmor
 #   - File permissions
 #   - Shared memory hardening
-#   - Disable unnecessary services
 #   - Unattended security upgrades
 #
 # Usage:
@@ -418,27 +417,6 @@ fi
 log "/dev/shm hardened."
 
 # ──────────────────────
-# 13. Disable Unnecessary Services
-# ──────────────────────
-log "Disabling unnecessary services..."
-
-DISABLE_SERVICES=(
-    avahi-daemon
-    cups
-    nfs-server
-    rpcbind
-    bluetooth
-)
-
-for svc in "${DISABLE_SERVICES[@]}"; do
-    if systemctl list-unit-files "${svc}.service" &>/dev/null; then
-        systemctl stop "$svc" 2>/dev/null || true
-        systemctl disable "$svc" 2>/dev/null || true
-        log "Disabled: $svc"
-    fi
-done
-
-# ──────────────────────
 # Done
 # ──────────────────────
 echo ""
@@ -458,7 +436,6 @@ echo "  ✓ rkhunter (rootkit detection)"
 echo "  ✓ AppArmor enforced"
 echo "  ✓ File permissions hardened"
 echo "  ✓ /dev/shm secured (noexec,nosuid,nodev)"
-echo "  ✓ Unnecessary services disabled"
 echo ""
 echo "Reboot to apply all changes:"
 echo "  sudo reboot"
