@@ -1,6 +1,6 @@
 # Mise
 
-How this repository uses [mise](https://mise.jdx.dev/) for the local toolchain, host first-boot pins, optional system-wide activation, and full uninstall.
+How this repository uses [mise](https://mise.jdx.dev/) for the local toolchain, host first-boot pins, optional system-wide install, and full uninstall.
 
 Two config files (mise only loads the `mise*.toml` names):
 
@@ -11,17 +11,20 @@ Two config files (mise only loads the `mise*.toml` names):
 
 `yq` is host-only (`mise.host.toml`). Root `mise.toml` pins `shellcheck` for the local toolchain.
 
-One script (CLI verbs unchanged):
+One script, two official [installer](https://mise.jdx.dev/installing-mise.html) paths:
 
-| Command | Purpose |
-|---|---|
-| [`scripts/mise.sh`](../scripts/mise.sh) `install` | Official installer + host pins (`mise.host.toml`) |
-| `system-wide` | Create or remove `/etc/profile.d/mise.sh` |
-| `uninstall` | Remove mise, its tools, and user activation |
+| Command | Method | Binary |
+|---|---|---|
+| [`scripts/mise.sh`](../scripts/mise.sh) `install` | **1 — per-user** | `curl https://mise.run \| sh` → `~/.local/bin/mise` for the admin user |
+| `install --system-wide` | **2 — shared** | `curl https://mise.run \| MISE_INSTALL_PATH=/usr/local/bin/mise sh` → `/usr/local/bin/mise` + `/etc/profile.d/mise.sh` |
+| `system-wide` | **2 — shared** | Install `/usr/local/bin/mise` if missing, then write `profile.d` |
+| `uninstall` | method 1 cleanup | Admin tools + `~/.local/bin/mise`. Leaves the shared binary and `profile.d` |
 
 ```bash
 ./scripts/mise.sh --help
 ```
+
+Method 1 does **not** give other users (`hermes`, later `adduser`) a `mise` binary. Claim “all users” only for method 2.
 
 ## Role in this repo
 
@@ -38,6 +41,8 @@ Bootstrap runs `mise -E host exec -- yq` (root `mise.toml` ignored) to parse the
 
 Root [`mise.toml`](../mise.toml) is the **local toolchain** — what you get with `mise install` in a clone. Today that pins `shellcheck`. Those tools must not land on a fresh Debian host.
 
+Host pins stay on the **admin user** even with method 2. This script installs the **mise binary** for every login (method 2); it does not run `mise install --system` for tools.
+
 ### Why not bare `mise -E host`
 
 mise config environments **merge**. Load order (top wins, all still load):
@@ -53,7 +58,7 @@ So `mise -E host install` alone still installs `[tools]` from root `mise.toml`. 
 
 Requires `curl` on the host — see [INSTALLATION.md](INSTALLATION.md#prerequisites).
 
-### Host (first-boot)
+### Host (first-boot) — method 1
 
 As the admin user (not root), once per host, from the repo root (directory with `mise.toml` and `mise.host.toml`):
 
@@ -61,15 +66,29 @@ As the admin user (not root), once per host, from the repo root (directory with 
 ./scripts/mise.sh install
 ```
 
-First-boot one-liner (install + system-wide activation):
+Official installer as that user → `~/.local/bin/mise`, then host pins. Other login users do **not** get `mise`.
+
+Idempotent: skips the official installer if mise is already present (user or shared binary); `mise -E host install` is safe to re-run.
+
+Then run bootstrap as documented in [BOOTSTRAP.md](BOOTSTRAP.md).
+
+### Host (first-boot) — method 2
+
+Shared binary plus `profile.d`, and host pins for the admin user:
 
 ```bash
 sudo ./scripts/mise.sh install --system-wide
 ```
 
-This installs **only** host pins. Idempotent: skips the official installer if mise is already present; `mise -E host install` is safe to re-run.
+This is what makes `command -v mise` work for every login user (Debian already has `/usr/local/bin` on the default `PATH`). Bootstrap still only needs host `yq` for `$SUDO_USER`.
 
-Then run bootstrap as documented in [BOOTSTRAP.md](BOOTSTRAP.md).
+Shared binary only (no host pins):
+
+```bash
+sudo ./scripts/mise.sh system-wide
+```
+
+Idempotent: skips the download if `/usr/local/bin/mise` already exists. Does **not** copy or symlink a user `~/.local/bin/mise`.
 
 ### Workstation (local toolchain)
 
@@ -85,6 +104,8 @@ That reads `mise.toml` only (no `-E`). Use this in a clone. Do not use `./script
 
 ```bash
 mise --version
+command -v mise
+# method 2: /usr/local/bin/mise  |  method 1: ~/.local/bin/mise
 
 # workstation toolchain
 mise exec -- shellcheck --version
@@ -93,18 +114,24 @@ mise exec -- shellcheck --version
 MISE_IGNORED_CONFIG_PATHS="$PWD/mise.toml" mise -E host exec -- yq --version
 ```
 
-## System-wide activation (optional)
+After method 2, verify as a **different** login user (new login shell):
 
-Make mise-managed tools available to **all users** on login — no per-session `PATH` export.
+```bash
+command -v mise   # /usr/local/bin/mise
+```
+
+## System-wide install (method 2, optional)
+
+Method 2 installs the official binary at `/usr/local/bin/mise` and writes `/etc/profile.d/mise.sh`. That is what “available to all users on login” means.
 
 ### How it works
 
-`system-wide` creates `/etc/profile.d/mise.sh`, sourced by Bourne-compatible login shells on Debian. It:
+1. Official installer with `MISE_INSTALL_PATH=/usr/local/bin/mise` (root)
+2. `/etc/profile.d/mise.sh` (Bourne-compatible login shells on Debian):
+   - Adds mise shims to `PATH`
+   - Runs `mise activate bash` when `mise` is on `PATH`
 
-1. Adds mise shims to `PATH`
-2. Runs `mise activate bash` when `mise` is on `PATH`
-
-`~/.local/bin` is bootstrap’s job (`00-local-bin.sh`, see [BOOTSTRAP.md](BOOTSTRAP.md)). The `00-` prefix runs before `mise.sh` so `mise activate` keeps that path. `--remove` deletes `mise.sh` only.
+`~/.local/bin` is bootstrap’s job (`00-local-bin.sh`, see [BOOTSTRAP.md](BOOTSTRAP.md)). The `00-` prefix runs before `mise.sh` so `mise activate` keeps that path. `--remove` deletes `profile.d` only — the shared binary stays.
 
 Works for SSH, console logins, and `sudo -i` without editing each user’s `~/.bashrc`.
 
@@ -112,25 +139,13 @@ Bootstrap does **not** depend on system-wide mise.
 
 ### Enable
 
-Requires root and an existing mise install for `$SUDO_USER`:
-
 ```bash
 sudo ./scripts/mise.sh system-wide
 ```
 
-Or combine with install: `sudo ./scripts/mise.sh install --system-wide`.
+Or combine with host pins: `sudo ./scripts/mise.sh install --system-wide`.
 
-Idempotent: skips if the file already has the expected content. If the file differs, prompts interactively or exits in non-interactive mode (use `--remove` first to start fresh).
-
-### Verify
-
-Open a **new** login shell:
-
-```bash
-echo "$PATH" | grep mise
-mise doctor
-which yq
-```
+`profile.d` is idempotent: skips if the file already has the expected content. If the file differs, prompts interactively or exits in non-interactive mode (use `--remove` first to start fresh).
 
 ### Disable (profile.d only)
 
@@ -138,36 +153,39 @@ which yq
 sudo ./scripts/mise.sh system-wide --remove
 ```
 
-Deletes `/etc/profile.d/mise.sh`. Takes effect in new login sessions. Does **not** uninstall mise or its tools, and does **not** remove `00-local-bin.sh`.
+Deletes `/etc/profile.d/mise.sh`. Takes effect in new login sessions. Does **not** remove `/usr/local/bin/mise`, host pins, or `00-local-bin.sh`.
 
 ### Manual per-user alternative
 
-Instead of system-wide activation, add to each user’s `~/.bashrc`:
+Instead of method 2, use method 1 and add to that user’s `~/.bashrc`:
 
 ```bash
 export PATH="$HOME/.local/share/mise/shims:$PATH"
 eval "$(mise activate bash)"
 ```
 
+That still only covers users who already have a `mise` binary.
+
 ## Full uninstall
 
-`uninstall` completely removes mise from the admin account:
+`uninstall` removes mise from the admin account:
 
 1. `mise uninstall --all` — remove installed tool versions
 2. `mise unuse -g …` — clear global tool config
-3. Capture paths from `mise implode -n --config` and delete them
+3. Capture paths from `mise implode -n --config` and delete them (skips `/usr/local/bin/mise` unless `--system-wide`)
 4. Remove well-known user paths (`~/.local/bin/mise`, `~/.local/share/mise`, …)
 5. Strip `mise activate` lines from `~/.bashrc` (backup: `~/.bashrc.bak`)
 
 ```bash
 ./scripts/mise.sh uninstall
-sudo ./scripts/mise.sh uninstall --system-wide   # also deletes profile.d
+sudo ./scripts/mise.sh uninstall --system-wide   # also deletes shared binary + profile.d
 ```
 
-If you enabled system-wide activation and uninstall without `--system-wide`, remove the leftover file:
+Without `--system-wide`, leftovers stay:
 
 ```bash
-sudo ./scripts/mise.sh system-wide --remove
+sudo ./scripts/mise.sh system-wide --remove   # profile.d only
+sudo ./scripts/mise.sh uninstall --system-wide
 ```
 
 Then open a new login session so PATH no longer references mise shims.
@@ -177,6 +195,7 @@ Then open a new login session so PATH no longer references mise shims.
 | Symptom | Likely cause | Solution |
 |---|---|---|
 | Bootstrap: mise/yq not ready | Tools not installed for `$SUDO_USER` | `./scripts/mise.sh install` |
+| Other user: `mise: command not found` | Method 1 only (`~/.local/bin/mise`) | `sudo ./scripts/mise.sh system-wide` (method 2) |
 | Login PATH is only mise shims + `/usr/bin` (no `~/.local/bin`) | Missing `/etc/profile.d/00-local-bin.sh`, or it sourced after `mise.sh` | Re-run bootstrap (plants the `00-` file), then a new login |
 | Tools missing in new SSH session | `profile.d` not sourced | Use a login shell; confirm Bourne-compatible shell |
 | `mise: command not found` at login | Binary gone but `profile.d` remains | `sudo ./scripts/mise.sh system-wide --remove` |
@@ -184,7 +203,9 @@ Then open a new login session so PATH no longer references mise shims.
 
 ## Technical notes
 
-- The official installer runs as the admin user (`$SUDO_USER` under sudo), never as root — binary lands in `~/.local/bin`
+- Method 1: official installer as the admin user (`$SUDO_USER` under sudo), never as root → `~/.local/bin/mise`
+- Method 2: official installer as root with `MISE_INSTALL_PATH=/usr/local/bin/mise`. Never copy/symlink a user binary into `/usr/local/bin`
+- Script PATH under sudo includes `/usr/local/bin` (not only `~/.local/bin:/usr/bin:/bin`)
 - `/etc/profile.d/` scripts are sourced during login shell init
 - `${HOME}` in `profile.d/*.sh` expands per user at runtime
 - `~/.local/bin` is owned by bootstrap (`00-local-bin.sh`), not `mise.sh`
@@ -195,4 +216,5 @@ Then open a new login session so PATH no longer references mise shims.
 ## References
 
 - [mise documentation](https://mise.jdx.dev/)
+- [Installing mise](https://mise.jdx.dev/installing-mise.html) — both `mise.run` paths
 - [BOOTSTRAP.md](BOOTSTRAP.md) — first-boot setup; requires mise + yq

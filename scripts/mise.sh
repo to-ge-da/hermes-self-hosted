@@ -2,6 +2,12 @@
 #
 # mise.sh — Install, activate, or remove mise for this repo
 #
+# Two official installer paths (https://mise.jdx.dev/installing-mise.html):
+#   install                 curl https://mise.run | sh
+#                           → ~/.local/bin/mise (admin user)
+#   install --system-wide   curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+#                           → /usr/local/bin/mise + /etc/profile.d/mise.sh
+#
 # Usage:
 #   ./scripts/mise.sh install
 #   sudo ./scripts/mise.sh install --system-wide
@@ -15,6 +21,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROFILE_D_FILE="/etc/profile.d/mise.sh"
+SHARED_MISE="/usr/local/bin/mise"
 
 # shellcheck disable=SC2016
 SHIM_LINE='export PATH="${HOME}/.local/share/mise/shims:${PATH}"'
@@ -42,20 +49,26 @@ usage() {
 Usage: $0 <command> [options]
 
 Manage mise (binary + pinned host tools from mise.host.toml) and optional
-system-wide activation. Bootstrap does not install mise — run this first.
+system-wide install. Bootstrap does not install mise — run this first.
 
-The local toolchain is root mise.toml (`mise install` with no -E).
+The local toolchain is root mise.toml (\`mise install\` with no -E).
 This script always uses -E host and ignores root mise.toml.
 
+Two official installer paths (https://mise.jdx.dev/installing-mise.html):
+  install                 curl https://mise.run | sh
+                          → ~/.local/bin/mise (admin user)
+  install --system-wide   curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+                          → /usr/local/bin/mise + /etc/profile.d/mise.sh
+
 Commands:
-  install         Install mise for the admin user and host pins (mise.host.toml)
-  system-wide     Write /etc/profile.d/mise.sh (requires root)
+  install         Method 1: per-user official installer + host pins
+  system-wide     Method 2: shared binary + profile.d (requires root)
   uninstall       Remove mise, pinned tools, and user bashrc activation
 
 Options:
-  --system-wide   With install: also write profile.d
-                  With uninstall: also remove profile.d
-  --remove        With system-wide: delete profile.d only
+  --system-wide   With install: method 2 + profile.d + host pins
+                  With uninstall: also remove shared binary and profile.d
+  --remove        With system-wide: delete profile.d only (keep shared binary)
   -h, --help      Show this help message
 
 Examples:
@@ -72,8 +85,18 @@ require_root() {
     [[ $EUID -eq 0 ]] || err "This command must be run as root (use sudo)."
 }
 
+require_curl() {
+    command -v curl >/dev/null 2>&1 \
+        || err "curl is required to install mise. On Debian: sudo apt install -y curl (see docs/INSTALLATION.md)."
+}
+
 require_profile_d_dir() {
     [[ -d /etc/profile.d ]] || err "/etc/profile.d/ does not exist. This system may not support profile.d."
+}
+
+# PATH used when invoking mise as the admin user (covers both installer paths).
+target_path() {
+    printf '%s\n' "${TARGET_HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin"
 }
 
 resolve_target_user() {
@@ -124,10 +147,10 @@ run_as_target() {
     local cmd="$1"
     if [[ $EUID -eq 0 ]]; then
         sudo -u "$TARGET_USER" -H env "HOME=${TARGET_HOME}" \
-            PATH="${TARGET_HOME}/.local/bin:/usr/bin:/bin" \
+            PATH="$(target_path)" \
             bash -c "$cmd"
     else
-        PATH="${HOME}/.local/bin:${PATH}" bash -c "$cmd"
+        PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}" bash -c "$cmd"
     fi
 }
 
@@ -136,6 +159,7 @@ find_mise() {
     if [[ -n "${TARGET_HOME:-}" ]]; then
         for candidate in \
             "${TARGET_HOME}/.local/bin/mise" \
+            "$SHARED_MISE" \
             "${TARGET_HOME}/.local/share/mise/shims/mise"
         do
             if [[ -x "$candidate" ]]; then
@@ -143,22 +167,57 @@ find_mise() {
                 return 0
             fi
         done
+    elif [[ -x "$SHARED_MISE" ]]; then
+        printf '%s\n' "$SHARED_MISE"
+        return 0
     fi
     if [[ $EUID -eq 0 && -n "${TARGET_USER:-}" ]]; then
         from_user="$(sudo -u "$TARGET_USER" -H env "HOME=${TARGET_HOME}" \
-            PATH="${TARGET_HOME}/.local/bin:/usr/bin:/bin" \
+            PATH="$(target_path)" \
             bash -c 'command -v mise' 2>/dev/null || true)"
         if [[ -n "$from_user" ]]; then
             printf '%s\n' "$from_user"
             return 0
         fi
     elif [[ $EUID -ne 0 ]]; then
-        if PATH="${HOME}/.local/bin:${PATH}" command -v mise >/dev/null 2>&1; then
-            PATH="${HOME}/.local/bin:${PATH}" command -v mise
+        if PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}" command -v mise >/dev/null 2>&1; then
+            PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}" command -v mise
             return 0
         fi
     fi
     return 1
+}
+
+# Method 1: official installer as the admin user → ~/.local/bin/mise
+install_user_binary() {
+    local existing
+    existing="$(find_mise || true)"
+    if [[ -n "$existing" ]]; then
+        log "mise already installed (${existing})."
+        return 0
+    fi
+    require_curl
+    log "Installing mise for ${TARGET_USER} (official installer, per-user)..."
+    run_as_target 'curl -fsSL https://mise.run | sh'
+    if [[ ! -x "${TARGET_HOME}/.local/bin/mise" ]]; then
+        err "mise installer finished but mise was not found in ${TARGET_HOME}/.local/bin."
+    fi
+}
+
+# Method 2: official installer as root → /usr/local/bin/mise
+# Do not copy or symlink a user binary here.
+install_shared_binary() {
+    require_root
+    if [[ -x "$SHARED_MISE" ]]; then
+        log "mise already installed at ${SHARED_MISE}."
+        return 0
+    fi
+    require_curl
+    log "Installing mise to ${SHARED_MISE} (official installer, MISE_INSTALL_PATH)..."
+    curl -fsSL https://mise.run | MISE_INSTALL_PATH="$SHARED_MISE" sh
+    if [[ ! -x "$SHARED_MISE" ]]; then
+        err "mise installer finished but ${SHARED_MISE} was not found."
+    fi
 }
 
 remove_path() {
@@ -168,6 +227,15 @@ remove_path() {
     fi
     rm -rf "$path"
     log "Removed $path"
+}
+
+remove_shared_binary() {
+    require_root
+    if [[ -e "$SHARED_MISE" || -L "$SHARED_MISE" ]]; then
+        remove_path "$SHARED_MISE"
+    else
+        warn "${SHARED_MISE} does not exist. Nothing to remove."
+    fi
 }
 
 remove_system_wide() {
@@ -185,10 +253,9 @@ remove_system_wide() {
 write_system_wide() {
     require_root
     require_profile_d_dir
-    resolve_target_user
 
-    if ! find_mise >/dev/null; then
-        err "mise is not installed for ${TARGET_USER}. Run: $0 install"
+    if [[ ! -x "$SHARED_MISE" ]]; then
+        err "mise is not installed at ${SHARED_MISE}. Run: sudo $0 system-wide"
     fi
 
     if [[ -f "$PROFILE_D_FILE" ]]; then
@@ -215,6 +282,7 @@ write_system_wide() {
 #
 # Adds mise shims to PATH and activates mise for all users.
 # This file is sourced by all Bourne-compatible login shells.
+# The shared binary lives at /usr/local/bin/mise (Debian default PATH).
 
 # Add mise shims to PATH for all users
 export PATH="${HOME}/.local/share/mise/shims:${PATH}"
@@ -228,27 +296,7 @@ MISEEOF
     log "Wrote $PROFILE_D_FILE (new login sessions pick it up)."
 }
 
-cmd_install() {
-    resolve_target_user
-    resolve_repo_root
-
-    if [[ "$FLAG_SYSTEM_WIDE" == true ]]; then
-        require_root
-        require_profile_d_dir
-    fi
-
-    if find_mise >/dev/null; then
-        log "mise already installed for ${TARGET_USER}."
-    else
-        command -v curl >/dev/null 2>&1 \
-            || err "curl is required to install mise. On Debian: sudo apt install -y curl (see docs/INSTALLATION.md)."
-        log "Installing mise for ${TARGET_USER} (official installer)..."
-        run_as_target 'curl -fsSL https://mise.run | sh'
-        if ! find_mise >/dev/null; then
-            err "mise installer finished but mise was not found in ${TARGET_HOME}/.local/bin."
-        fi
-    fi
-
+install_host_pins() {
     log "Installing host pins from ${REPO_ROOT}/mise.host.toml..."
     run_mise_host install
     run_mise_host exec -- yq --version >/dev/null \
@@ -257,6 +305,21 @@ cmd_install() {
     local version
     version="$(run_as_target 'mise --version' | head -n1 | tr -d '\r')"
     log "Ready: ${version} (user ${TARGET_USER})"
+}
+
+cmd_install() {
+    resolve_target_user
+    resolve_repo_root
+
+    if [[ "$FLAG_SYSTEM_WIDE" == true ]]; then
+        require_root
+        require_profile_d_dir
+        install_shared_binary
+    else
+        install_user_binary
+    fi
+
+    install_host_pins
 
     if [[ "$FLAG_SYSTEM_WIDE" == true ]]; then
         write_system_wide
@@ -268,15 +331,12 @@ cmd_system_wide() {
         remove_system_wide
         return 0
     fi
+    install_shared_binary
     write_system_wide
 }
 
 cmd_uninstall() {
     resolve_target_user
-
-    if [[ "$FLAG_SYSTEM_WIDE" == true ]]; then
-        remove_system_wide
-    fi
 
     if find_mise >/dev/null; then
         log "Uninstalling mise tools for ${TARGET_USER}..."
@@ -298,6 +358,10 @@ cmd_uninstall() {
             path="${path#\"}"
             path="${path%\"}"
             [[ -n "$path" ]] || continue
+            if [[ "$path" == "$SHARED_MISE" && "$FLAG_SYSTEM_WIDE" != true ]]; then
+                warn "Leaving shared binary ${SHARED_MISE} (use uninstall --system-wide to remove it)."
+                continue
+            fi
             remove_path "$path"
         done <<< "$implode"
     else
@@ -321,9 +385,19 @@ cmd_uninstall() {
         log "Removed mise activate from ${bashrc} (backup: ${bashrc}.bak)"
     fi
 
+    if [[ "$FLAG_SYSTEM_WIDE" == true ]]; then
+        remove_system_wide
+        remove_shared_binary
+    fi
+
     log "mise removed for ${TARGET_USER}."
-    if [[ "$FLAG_SYSTEM_WIDE" != true && -f "$PROFILE_D_FILE" ]]; then
-        warn "$PROFILE_D_FILE is still present. Remove it with: sudo $0 system-wide --remove"
+    if [[ "$FLAG_SYSTEM_WIDE" != true ]]; then
+        if [[ -f "$PROFILE_D_FILE" ]]; then
+            warn "$PROFILE_D_FILE is still present. Remove it with: sudo $0 system-wide --remove"
+        fi
+        if [[ -e "$SHARED_MISE" || -L "$SHARED_MISE" ]]; then
+            warn "${SHARED_MISE} is still present. Remove it with: sudo $0 uninstall --system-wide"
+        fi
     fi
 }
 
