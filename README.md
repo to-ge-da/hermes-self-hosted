@@ -43,3 +43,9 @@ Layout: `scripts/` (bootstrap, hardening, mise), `config/` (example bootstrap YA
 ## Contributing
 
 Use the Bug, Feature, or Task issue template and the PR template. Conventional Commits; branch from `main` as `feat/`, `fix/`, `chore/`, or `docs/`. Details: [AGENTS.md](AGENTS.md).
+
+## Quick start
+
+1. Clone this repository.
+2. Install prerequisites from project files.
+3. Build and run the project's standard tests.
