@@ -11,7 +11,7 @@ Run the Hermes web dashboard (`hermes dashboard`) in the background on Debian / 
 ## Prerequisites
 
 - Hermes Agent installed and working (`hermes --version` / `uv run hermes --version`)
-- For Option A: `tmux`, `screen`, or `nohup` available
+- For Option A: `tmux`, `screen`, or `nohup` available (`tmux` is installed by [bootstrap](../BOOTSTRAP.md))
 - For Option B: `systemd` user session (default on modern Debian; MX Linux with systemd)
 
 There is **no built-in daemon flag** on `hermes dashboard`. Use tmux/nohup/screen or a systemd user unit. (`hermes serve` is a related headless backend — same bind/stop/status flags — not a dashboard daemon mode.)

@@ -577,7 +577,7 @@ apt -qq autoremove -y
 # ──────────────────────
 # 3. Packages (four categories — see docs/BOOTSTRAP.md)
 # ──────────────────────
-# Host baseline: downloads, git, rsync, unattended upgrades.
+# Host baseline: downloads, git, rsync, unattended upgrades, tree, jq, tmux.
 # openssh-server, wget, apt-listchanges, iproute2, and sudo are already on
 # Debian 13 netinst + SSH + standard utilities. ufw is installed in hardening.sh.
 apt_install "host baseline packages" \
@@ -585,7 +585,9 @@ apt_install "host baseline packages" \
     git \
     rsync \
     unattended-upgrades \
-    tree
+    tree \
+    jq \
+    tmux
 
 # Network stack for the Hermes host (iproute2 is already on Debian).
 apt_install "network stack packages" \
