@@ -36,7 +36,7 @@ The ordered path is in [INSTALLATION.md](docs/INSTALLATION.md).
 
 ## Hermes Agent
 
-Agent guides for this host. Index: [docs/hermes/README.md](docs/hermes/README.md).
+Install, uninstall, dashboard, and profile templates. Index: [docs/hermes/README.md](docs/hermes/README.md).
 
 ## Forks
 

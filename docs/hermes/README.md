@@ -1,6 +1,6 @@
 # Hermes Agent
 
-Install and run the Agent on this host. Host setup is in [INSTALLATION.md](../INSTALLATION.md) and [BOOTSTRAP.md](../BOOTSTRAP.md).
+Install and run Hermes Agent. Debian host setup is in [INSTALLATION.md](../INSTALLATION.md) and [BOOTSTRAP.md](../BOOTSTRAP.md).
 
 | Doc | Topic |
 |---|---|
