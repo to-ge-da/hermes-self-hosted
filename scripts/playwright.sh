@@ -1,10 +1,11 @@
 #!/bin/bash
 #
-# playwright.sh — Enable Playwright Chromium after a --skip-browser install
+# playwright.sh — Chromium after --skip-browser, or leftover hung cache
 #
-# Does NOT run `npx playwright install chromium` (Playwright 1.58.2 +
-# bundled Node 26 hangs on extract). Reuses cache or unpacks/downloads
-# the Chrome for Testing zip. OS libs are a separate admin step.
+# Official main pins Playwright 1.62.1 (hermes-agent#93357); npx extract
+# is fine on a fresh install. This script unpacks the Chrome for Testing
+# zip (reuse cache / leftover 1.58.2 hang). OS libs are a separate admin
+# step — hermes has no sudo.
 #
 # Usage:
 #   ./scripts/playwright.sh              # as hermes: unpack / reuse / download
@@ -14,7 +15,7 @@
 set -euo pipefail
 
 DEFAULT_HERMES_USER="hermes"
-# Official pin today (playwright-core 1.58.2 browsers.json).
+# Fallback when browsers.json is missing (Playwright 1.58.2 pin).
 DEFAULT_CHROMIUM_REV="1208"
 DEFAULT_BROWSER_VERSION="145.0.7632.6"
 
@@ -35,15 +36,15 @@ usage() {
     cat <<EOF
 Usage: $0 [--deps] [--user NAME] [--hermes-home PATH] [-h|--help]
 
-Enable Playwright Chromium after the official installer --skip-browser.
+Enable Playwright Chromium after --skip-browser, or recover a leftover
+hung extract (Playwright 1.58.2 + Node 26, fixed upstream in 1.62.1).
 
-Do not run the installer follow-up:
+On a current official install, this is also fine:
 
   cd ~/.hermes/hermes-agent && npx playwright install chromium
 
-That command hangs on extract (Playwright 1.58.2 + Node 26). This script
-reuses ~/.cache/ms-playwright, unpacks an existing zip, or downloads the
-zip from the Playwright CDN. It never starts that extract.
+This script reuses ~/.cache/ms-playwright, unpacks an existing zip, or
+downloads the zip from the Playwright CDN.
 
 Who runs which part
   hermes (no sudo)   $0
@@ -283,7 +284,7 @@ enable_chromium() {
 
     hermes_home="$(resolve_hermes_home)"
     agent="${hermes_home}/hermes-agent"
-    [[ -d "$agent" ]] || err "Hermes Agent not found at $agent. Install Hermes first (with --skip-browser)."
+    [[ -d "$agent" ]] || err "Hermes Agent not found at $agent. Install Hermes first."
 
     rev="$DEFAULT_CHROMIUM_REV"
     ver="$DEFAULT_BROWSER_VERSION"
