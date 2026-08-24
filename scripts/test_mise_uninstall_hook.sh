@@ -46,4 +46,18 @@ set -e
 [[ "$status" -eq 127 ]] || { echo "FAIL: non-hook exit ${status}"; exit 1; }
 [[ ! -e "$DEST" ]] || { echo "FAIL: stub not deleted on non-hook"; exit 1; }
 
+# ELF-like file: no NUL warning, not a stub
+bin="${TMP}/elfish"
+printf 'mise\0binary\n' > "$bin"
+nul_err="$(is_uninstall_stub "$bin" 2>&1 || true)"
+[[ "$nul_err" != *null* ]] || { echo "FAIL: NUL warning: ${nul_err}"; exit 1; }
+
+# Shared path: parent cannot unlink /usr/local/bin — eval must not rm
+SHARED_MISE="${TMP}/shared-mise"
+plant_hook_stub "$SHARED_MISE"
+shared_eval="$("$SHARED_MISE" hook-env -s bash)"
+[[ "$shared_eval" != *rm* ]] || { echo "FAIL: shared stub eval contains rm"; exit 1; }
+eval "$shared_eval"
+[[ -e "$SHARED_MISE" ]] || { echo "FAIL: shared stub should remain"; exit 1; }
+
 echo OK

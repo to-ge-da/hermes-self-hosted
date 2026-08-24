@@ -236,9 +236,9 @@ remove_path() {
 
 is_uninstall_stub() {
     [[ -f "$1" ]] || return 1
-    local second
-    second="$(sed -n '2p' "$1" 2>/dev/null || true)"
-    [[ "$second" == "# mise-uninstall-stub" ]]
+    # Real mise is ELF; do not read it (bash warns on NUL in $(sed)).
+    [[ "$(head -c 2 "$1" 2>/dev/null || true)" == "#!" ]] || return 1
+    grep -q '^# mise-uninstall-stub$' "$1"
 }
 
 clear_uninstall_stub() {
@@ -249,19 +249,36 @@ clear_uninstall_stub() {
 
 # Child cannot unset the parent's PROMPT_COMMAND. Leftover `mise activate`
 # calls this path as hook-env; the stub uses that once, then deletes itself.
-# ponytail: one-shot file at the hashed path; gone after the next prompt
+# ponytail: /usr/local/bin is not unlinkable by the parent; stub stays until
+# next sudo install/uninstall (clear_uninstall_stub)
 plant_hook_stub() {
     local dest="$1"
     local dest_q
     dest_q="$(printf '%q' "$dest")"
     mkdir -p "$(dirname "$dest")"
-    cat > "$dest" << EOF
+    if [[ "$dest" == "$SHARED_MISE" ]]; then
+        cat > "$dest" << 'EOF'
 #!/bin/sh
 # mise-uninstall-stub
-# ponytail: leftover activate hook in the parent; self-deletes after one hook-env
+[ "${1-}" = "hook-env" ] || exit 127
+cat <<'HOOK'
+unset -f _mise_hook 2>/dev/null || true
+PROMPT_COMMAND="${PROMPT_COMMAND-}"
+PROMPT_COMMAND="${PROMPT_COMMAND//_mise_hook/}"
+PROMPT_COMMAND="${PROMPT_COMMAND//;;/;}"
+PROMPT_COMMAND="${PROMPT_COMMAND#;}"
+PROMPT_COMMAND="${PROMPT_COMMAND%;}"
+hash -d mise 2>/dev/null || true
+HOOK
+EOF
+    else
+        cat > "$dest" << EOF
+#!/bin/sh
+# mise-uninstall-stub
 [ "\${1-}" = "hook-env" ] || { rm -f -- ${dest_q}; exit 127; }
 cat <<'HOOK'
 unset -f _mise_hook 2>/dev/null || true
+PROMPT_COMMAND="\${PROMPT_COMMAND-}"
 PROMPT_COMMAND="\${PROMPT_COMMAND//_mise_hook/}"
 PROMPT_COMMAND="\${PROMPT_COMMAND//;;/;}"
 PROMPT_COMMAND="\${PROMPT_COMMAND#;}"
@@ -270,6 +287,7 @@ hash -d mise 2>/dev/null || true
 HOOK
 printf '%s\n' 'rm -f -- ${dest_q}'
 EOF
+    fi
     chmod 755 "$dest"
     if [[ $EUID -eq 0 && "$dest" != "$SHARED_MISE" && -n "${TARGET_USER:-}" ]]; then
         chown "$TARGET_USER:" "$dest"
@@ -383,8 +401,8 @@ cmd_uninstall() {
     user_mise="${TARGET_HOME}/.local/bin/mise"
     had_user_bin=false
     had_shared_bin=false
-    [[ -e "$user_mise" || -L "$user_mise" ]] && had_user_bin=true
-    [[ -e "$SHARED_MISE" || -L "$SHARED_MISE" ]] && had_shared_bin=true
+    [[ -e "$user_mise" || -L "$user_mise" ]] && ! is_uninstall_stub "$user_mise" && had_user_bin=true
+    [[ -e "$SHARED_MISE" || -L "$SHARED_MISE" ]] && ! is_uninstall_stub "$SHARED_MISE" && had_shared_bin=true
 
     if find_mise >/dev/null; then
         log "Uninstalling mise tools for ${TARGET_USER}..."
