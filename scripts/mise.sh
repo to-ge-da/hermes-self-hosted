@@ -162,12 +162,12 @@ find_mise() {
             "$SHARED_MISE" \
             "${TARGET_HOME}/.local/share/mise/shims/mise"
         do
-            if [[ -x "$candidate" ]]; then
+            if [[ -x "$candidate" ]] && ! is_uninstall_stub "$candidate"; then
                 printf '%s\n' "$candidate"
                 return 0
             fi
         done
-    elif [[ -x "$SHARED_MISE" ]]; then
+    elif [[ -x "$SHARED_MISE" ]] && ! is_uninstall_stub "$SHARED_MISE"; then
         printf '%s\n' "$SHARED_MISE"
         return 0
     fi
@@ -175,14 +175,17 @@ find_mise() {
         from_user="$(sudo -u "$TARGET_USER" -H env "HOME=${TARGET_HOME}" \
             PATH="$(target_path)" \
             bash -c 'command -v mise' 2>/dev/null || true)"
-        if [[ -n "$from_user" ]]; then
+        if [[ -n "$from_user" ]] && ! is_uninstall_stub "$from_user"; then
             printf '%s\n' "$from_user"
             return 0
         fi
     elif [[ $EUID -ne 0 ]]; then
         if PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}" command -v mise >/dev/null 2>&1; then
-            PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}" command -v mise
-            return 0
+            from_user="$(PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}" command -v mise)"
+            if [[ -n "$from_user" ]] && ! is_uninstall_stub "$from_user"; then
+                printf '%s\n' "$from_user"
+                return 0
+            fi
         fi
     fi
     return 1
@@ -191,6 +194,7 @@ find_mise() {
 # Method 1: official installer as the admin user → ~/.local/bin/mise
 install_user_binary() {
     local existing
+    clear_uninstall_stub "${TARGET_HOME}/.local/bin/mise"
     existing="$(find_mise || true)"
     if [[ -n "$existing" ]]; then
         log "mise already installed (${existing})."
@@ -208,6 +212,7 @@ install_user_binary() {
 # Do not copy or symlink a user binary here.
 install_shared_binary() {
     require_root
+    clear_uninstall_stub "$SHARED_MISE"
     if [[ -x "$SHARED_MISE" ]]; then
         log "mise already installed at ${SHARED_MISE}."
         return 0
@@ -229,13 +234,51 @@ remove_path() {
     log "Removed $path"
 }
 
+is_uninstall_stub() {
+    [[ -f "$1" ]] || return 1
+    local second
+    second="$(sed -n '2p' "$1" 2>/dev/null || true)"
+    [[ "$second" == "# mise-uninstall-stub" ]]
+}
+
+clear_uninstall_stub() {
+    if is_uninstall_stub "$1"; then
+        rm -f "$1"
+    fi
+}
+
+# Child cannot unset the parent's PROMPT_COMMAND. Leftover `mise activate`
+# calls this path as hook-env; the stub uses that once, then deletes itself.
+# ponytail: one-shot file at the hashed path; gone after the next prompt
+plant_hook_stub() {
+    local dest="$1"
+    local dest_q
+    dest_q="$(printf '%q' "$dest")"
+    mkdir -p "$(dirname "$dest")"
+    cat > "$dest" << EOF
+#!/bin/sh
+# mise-uninstall-stub
+# ponytail: leftover activate hook in the parent; self-deletes after one hook-env
+[ "\${1-}" = "hook-env" ] || { rm -f -- ${dest_q}; exit 127; }
+cat <<'HOOK'
+unset -f _mise_hook 2>/dev/null || true
+PROMPT_COMMAND="\${PROMPT_COMMAND//_mise_hook/}"
+PROMPT_COMMAND="\${PROMPT_COMMAND//;;/;}"
+PROMPT_COMMAND="\${PROMPT_COMMAND#;}"
+PROMPT_COMMAND="\${PROMPT_COMMAND%;}"
+hash -d mise 2>/dev/null || true
+HOOK
+printf '%s\n' 'rm -f -- ${dest_q}'
+EOF
+    chmod 755 "$dest"
+    if [[ $EUID -eq 0 && "$dest" != "$SHARED_MISE" && -n "${TARGET_USER:-}" ]]; then
+        chown "$TARGET_USER:" "$dest"
+    fi
+}
+
 remove_shared_binary() {
     require_root
-    if [[ -e "$SHARED_MISE" || -L "$SHARED_MISE" ]]; then
-        remove_path "$SHARED_MISE"
-    else
-        warn "${SHARED_MISE} does not exist. Nothing to remove."
-    fi
+    remove_path "$SHARED_MISE"
 }
 
 remove_system_wide() {
@@ -245,8 +288,6 @@ remove_system_wide() {
         rm -f "$PROFILE_D_FILE"
         log "Removed $PROFILE_D_FILE"
         log "Changes take effect in new login sessions."
-    else
-        warn "$PROFILE_D_FILE does not exist. Nothing to remove."
     fi
 }
 
@@ -338,6 +379,13 @@ cmd_system_wide() {
 cmd_uninstall() {
     resolve_target_user
 
+    local user_mise had_user_bin had_shared_bin
+    user_mise="${TARGET_HOME}/.local/bin/mise"
+    had_user_bin=false
+    had_shared_bin=false
+    [[ -e "$user_mise" || -L "$user_mise" ]] && had_user_bin=true
+    [[ -e "$SHARED_MISE" || -L "$SHARED_MISE" ]] && had_shared_bin=true
+
     if find_mise >/dev/null; then
         log "Uninstalling mise tools for ${TARGET_USER}..."
         run_as_target 'mise uninstall --all' || warn "mise uninstall --all failed; continuing."
@@ -390,12 +438,19 @@ cmd_uninstall() {
         remove_shared_binary
     fi
 
+    if [[ "$had_user_bin" == true ]]; then
+        plant_hook_stub "$user_mise"
+    fi
+    if [[ "$FLAG_SYSTEM_WIDE" == true && "$had_shared_bin" == true ]]; then
+        plant_hook_stub "$SHARED_MISE"
+    fi
+
     log "mise removed for ${TARGET_USER}."
     if [[ "$FLAG_SYSTEM_WIDE" != true ]]; then
         if [[ -f "$PROFILE_D_FILE" ]]; then
             warn "$PROFILE_D_FILE is still present. Remove it with: sudo $0 system-wide --remove"
         fi
-        if [[ -e "$SHARED_MISE" || -L "$SHARED_MISE" ]]; then
+        if [[ (-e "$SHARED_MISE" || -L "$SHARED_MISE") ]] && ! is_uninstall_stub "$SHARED_MISE"; then
             warn "${SHARED_MISE} is still present. Remove it with: sudo $0 uninstall --system-wide"
         fi
     fi
@@ -404,47 +459,49 @@ cmd_uninstall() {
 # ──────────────────────
 # Parse arguments
 # ──────────────────────
-if [[ $# -eq 0 ]]; then
-    usage
-    exit 1
-fi
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    if [[ $# -eq 0 ]]; then
+        usage
+        exit 1
+    fi
 
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        install|system-wide|uninstall)
-            [[ -z "$CMD" ]] || err "Only one command is allowed. Use --help for usage."
-            CMD="$1"
-            shift
-            ;;
-        --system-wide)
-            FLAG_SYSTEM_WIDE=true
-            shift
-            ;;
-        --remove)
-            FLAG_REMOVE=true
-            shift
-            ;;
-        -h|--help)
-            usage
-            exit 0
-            ;;
-        *)
-            err "Unknown option: $1. Use --help for usage."
-            ;;
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            install|system-wide|uninstall)
+                [[ -z "$CMD" ]] || err "Only one command is allowed. Use --help for usage."
+                CMD="$1"
+                shift
+                ;;
+            --system-wide)
+                FLAG_SYSTEM_WIDE=true
+                shift
+                ;;
+            --remove)
+                FLAG_REMOVE=true
+                shift
+                ;;
+            -h|--help)
+                usage
+                exit 0
+                ;;
+            *)
+                err "Unknown option: $1. Use --help for usage."
+                ;;
+        esac
+    done
+
+    [[ -n "$CMD" ]] || err "Missing command. Use --help for usage."
+
+    if [[ "$FLAG_REMOVE" == true && "$CMD" != "system-wide" ]]; then
+        err "--remove is only valid with: system-wide"
+    fi
+    if [[ "$FLAG_SYSTEM_WIDE" == true && "$CMD" != "install" && "$CMD" != "uninstall" ]]; then
+        err "--system-wide is only valid with: install or uninstall"
+    fi
+
+    case "$CMD" in
+        install)      cmd_install ;;
+        system-wide)  cmd_system_wide ;;
+        uninstall)    cmd_uninstall ;;
     esac
-done
-
-[[ -n "$CMD" ]] || err "Missing command. Use --help for usage."
-
-if [[ "$FLAG_REMOVE" == true && "$CMD" != "system-wide" ]]; then
-    err "--remove is only valid with: system-wide"
 fi
-if [[ "$FLAG_SYSTEM_WIDE" == true && "$CMD" != "install" && "$CMD" != "uninstall" ]]; then
-    err "--system-wide is only valid with: install or uninstall"
-fi
-
-case "$CMD" in
-    install)      cmd_install ;;
-    system-wide)  cmd_system_wide ;;
-    uninstall)    cmd_uninstall ;;
-esac
