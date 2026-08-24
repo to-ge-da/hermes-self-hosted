@@ -224,7 +224,9 @@ Prepare the host for [install.md](hermes/install.md) so the official installer d
 
 ### Docker
 
-Debian `docker.io` (engine + CLI). Stays that way: apt-native, no vendor key, enough for `hermes doctor` and an unprivileged CLI. Docker CE (`download.docker.com`) is a later opt-in — do not mix the two on one host. **admin and hermes** are added to the `docker` group so the CLI works without sudo after a new login.
+Debian `docker.io` (engine + CLI). Bootstrap stays on this: apt-native, no vendor key, enough for `hermes doctor` and an unprivileged CLI. Docker CE (`download.docker.com`) is out of bootstrap — that path has Compose/Buildx; do not mix the two on one host.
+
+**admin and hermes** are added to the `docker` group so the CLI works without sudo after a new login.
 
 | Package | Purpose |
 |---------|---------|
