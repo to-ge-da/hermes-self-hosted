@@ -22,7 +22,9 @@ Official installation of Hermes Agent on the server. Run as the unprivileged **h
 
 ### System packages (from bootstrap)
 
-[Bootstrap](../BOOTSTRAP.md) installs the apt packages the official installer would otherwise try to add via `sudo`. The `hermes` user has **no password and no sudo**, so those prompts would block or fail.
+[Bootstrap](../BOOTSTRAP.md) installs the apt packages the official installer would otherwise try to add via `sudo`. The `hermes` user has **no password and no sudo**.
+
+If those packages are missing, `--non-interactive` answers **yes** to installing them, then the installer calls `sudo` and blocks or fails. Do not sudo as `hermes` — use the admin fallback below.
 
 | Package set | Why | How the installer detects them |
 |-------------|-----|--------------------------------|
@@ -149,7 +151,7 @@ curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-
 | Flag | What it does | Why this repo uses it |
 |------|--------------|------------------------|
 | `--skip-setup` | Skip the interactive provider/model wizard (`hermes setup`) | Over SSH a TTY still exists, so a plain `curl \| bash` launches the wizard |
-| `--non-interactive` | Yes/no prompts take their default; `--stage setup` / `--stage gateway` are skipped | So a yes/no cannot sit waiting on the SSH session. Does not skip the setup wizard (`--skip-setup`) and does not run `sudo` |
+| `--non-interactive` | Yes/no prompts take their default; `--stage setup` / `--stage gateway` are skipped | So a yes/no cannot sit waiting on the SSH session. Does not skip the setup wizard (`--skip-setup`). Missing apt packages still hit the installer's `sudo` — see [System packages](#system-packages-from-bootstrap) |
 
 A plain `curl … | bash` (no flags) is interactive when a terminal is available.
 
