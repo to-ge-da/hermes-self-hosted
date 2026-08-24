@@ -36,7 +36,7 @@ The ordered path is in [INSTALLATION.md](docs/INSTALLATION.md).
 
 ## Hermes Agent
 
-Agent guides, not host playbooks. Index: [docs/hermes/README.md](docs/hermes/README.md).
+Agent guides for this host. Index: [docs/hermes/README.md](docs/hermes/README.md).
 
 ## Forks
 

@@ -1,8 +1,6 @@
 # Hermes Agent
 
-Guides for the Agent on this host. Not bootstrap or hardening.
-
-Host playbooks live in `docs/`: [INSTALLATION.md](../INSTALLATION.md), [BOOTSTRAP.md](../BOOTSTRAP.md).
+Install and run the Agent on this host. Host setup is in [INSTALLATION.md](../INSTALLATION.md) and [BOOTSTRAP.md](../BOOTSTRAP.md).
 
 | Doc | Topic |
 |---|---|
