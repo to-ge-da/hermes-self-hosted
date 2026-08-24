@@ -477,49 +477,47 @@ cmd_uninstall() {
 # ──────────────────────
 # Parse arguments
 # ──────────────────────
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-    if [[ $# -eq 0 ]]; then
-        usage
-        exit 1
-    fi
-
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            install|system-wide|uninstall)
-                [[ -z "$CMD" ]] || err "Only one command is allowed. Use --help for usage."
-                CMD="$1"
-                shift
-                ;;
-            --system-wide)
-                FLAG_SYSTEM_WIDE=true
-                shift
-                ;;
-            --remove)
-                FLAG_REMOVE=true
-                shift
-                ;;
-            -h|--help)
-                usage
-                exit 0
-                ;;
-            *)
-                err "Unknown option: $1. Use --help for usage."
-                ;;
-        esac
-    done
-
-    [[ -n "$CMD" ]] || err "Missing command. Use --help for usage."
-
-    if [[ "$FLAG_REMOVE" == true && "$CMD" != "system-wide" ]]; then
-        err "--remove is only valid with: system-wide"
-    fi
-    if [[ "$FLAG_SYSTEM_WIDE" == true && "$CMD" != "install" && "$CMD" != "uninstall" ]]; then
-        err "--system-wide is only valid with: install or uninstall"
-    fi
-
-    case "$CMD" in
-        install)      cmd_install ;;
-        system-wide)  cmd_system_wide ;;
-        uninstall)    cmd_uninstall ;;
-    esac
+if [[ $# -eq 0 ]]; then
+    usage
+    exit 1
 fi
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        install|system-wide|uninstall)
+            [[ -z "$CMD" ]] || err "Only one command is allowed. Use --help for usage."
+            CMD="$1"
+            shift
+            ;;
+        --system-wide)
+            FLAG_SYSTEM_WIDE=true
+            shift
+            ;;
+        --remove)
+            FLAG_REMOVE=true
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            err "Unknown option: $1. Use --help for usage."
+            ;;
+    esac
+done
+
+[[ -n "$CMD" ]] || err "Missing command. Use --help for usage."
+
+if [[ "$FLAG_REMOVE" == true && "$CMD" != "system-wide" ]]; then
+    err "--remove is only valid with: system-wide"
+fi
+if [[ "$FLAG_SYSTEM_WIDE" == true && "$CMD" != "install" && "$CMD" != "uninstall" ]]; then
+    err "--system-wide is only valid with: install or uninstall"
+fi
+
+case "$CMD" in
+    install)      cmd_install ;;
+    system-wide)  cmd_system_wide ;;
+    uninstall)    cmd_uninstall ;;
+esac
