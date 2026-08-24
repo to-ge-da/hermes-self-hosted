@@ -34,6 +34,10 @@ The ordered path is in [INSTALLATION.md](docs/INSTALLATION.md).
 | [GITHUB_TEMPLATES.md](docs/GITHUB_TEMPLATES.md) | Issue and PR templates |
 | [AGENTS.md](AGENTS.md) | Repo conventions |
 
+## Hermes Agent
+
+Install, uninstall, dashboard, and profile templates. Index: [docs/hermes/README.md](docs/hermes/README.md).
+
 ## Forks
 
 Cursor trees hosted here, not the install path. Index: [docs/forks/README.md](docs/forks/README.md).
