@@ -192,7 +192,7 @@ Already on the OS (not listed below): `openssh-server`, `wget`, `apt-listchanges
 
 ### Host baseline
 
-Downloads, git, rsync, unattended upgrades, and `tree`.
+Downloads, git, rsync, unattended upgrades, `tree`, `jq`, and `tmux`.
 
 | Package | Purpose |
 |---------|---------|
@@ -201,6 +201,8 @@ Downloads, git, rsync, unattended upgrades, and `tree`.
 | `rsync` | File transfer (host side) |
 | `unattended-upgrades` | Auto security updates — configured in hardening |
 | `tree` | Directory listing |
+| `jq` | JSON CLI for scripts and agents |
+| `tmux` | Terminal multiplexer (dashboard Option A) |
 
 ### Network stack
 
