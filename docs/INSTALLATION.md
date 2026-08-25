@@ -54,7 +54,7 @@ SSH key: [SSH-KEYS.md](SSH-KEYS.md). Copy files to the host: [FILE-TRANSFER.md](
 sudo ./scripts/bootstrap.sh --config ./bootstrap.yaml
 ```
 
-Creates the `hermes` user (no password, no sudo), packages, PATH, SSH key on admin + hermes. `apt upgrade` may install a new kernel; reboot is after hardening. Detail: [BOOTSTRAP.md](BOOTSTRAP.md).
+Creates the `hermes` user (no password, no sudo), packages, PATH, SSH key on admin + hermes. If the script says a reboot is required, `sudo reboot` and SSH back **before** step 5 (password SSH still works). Detail: [BOOTSTRAP.md](BOOTSTRAP.md).
 
 ## 5. Hardening (recommended)
 
@@ -64,7 +64,7 @@ Skip on a throwaway smoke VM if you want.
 sudo ./scripts/hardening.sh
 ```
 
-Debian may open a needrestart TUI during `apt` — continue, do not treat it as the reboot. When you see `HARDENING COMPLETE`:
+When you see `HARDENING COMPLETE`:
 
 ```bash
 sudo reboot

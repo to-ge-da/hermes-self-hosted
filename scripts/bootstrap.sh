@@ -643,6 +643,7 @@ fi
 # 2. System update
 # ──────────────────────
 export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=l
 export APT_LISTCHANGES_FRONTEND=none
 
 log "Updating system packages..."
@@ -845,7 +846,16 @@ echo -e "  ${CYAN}1.${NC} Verify SSH access for both users:"
 echo "       ${BOLD}ssh ${ADMIN_USER}@<server-ip>${NC}"
 echo "       ${BOLD}ssh ${HERMES_USER}@<server-ip>${NC}"
 echo ""
-echo -e "  ${CYAN}2.${NC} Run hardening.sh for security configuration:"
+step=2
+if [[ -f /var/run/reboot-required ]]; then
+    warn "Reboot required before hardening (/var/run/reboot-required)."
+    echo -e "  ${CYAN}${step}.${NC} Reboot (do not auto-reboot — this SSH session would die):"
+    echo "       ${BOLD}sudo reboot${NC}"
+    echo "       Password SSH still works until hardening."
+    echo ""
+    step=$((step + 1))
+fi
+echo -e "  ${CYAN}${step}.${NC} Run hardening.sh for security configuration:"
 echo "       ${BOLD}sudo ./scripts/hardening.sh${NC}"
 echo ""
 echo -e "${GREEN}══════════════════════════════════════════════${NC}"
