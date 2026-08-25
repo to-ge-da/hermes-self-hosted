@@ -145,7 +145,7 @@ Legacy flags (`--hostname`, `--timezone`, `--ssh-key`) and interactive prompts a
 | Hostname | From config |
 | Timezone | From config (default `UTC`) |
 | Locale | `en_US.UTF-8` |
-| User PATH | Writes `/etc/profile.d/00-local-bin.sh` — every login user gets `~/.local/bin` on `PATH` |
+| User PATH | Writes `/etc/profile.d/00-local-bin.sh`; stock `~/.profile` skips a second prepend |
 | Admin user | Detected via `$SUDO_USER` — existing account, not created; `docker` group; creates `~/.local/bin` |
 | Hermes user | Creates agent user from config (default `hermes`, no sudo, key-only); `docker` group; creates `~/.local/bin` |
 | SSH key | Same host key (`ssh.public_key` or `ssh.public_key_file`) appended on **hermes and admin** if missing |
@@ -177,7 +177,7 @@ MISE_VERSION=2024.x.x
 ```
 
 - **CONFIG_HASH** — SHA-256 of config **file contents** (not the path); changes are logged on re-run  
-- **Idempotency** — hostname / user / SSH key / `00-local-bin.sh` / docker group steps skip when already applied
+- **Idempotency** — hostname / user / SSH key / `00-local-bin.sh` / `~/.profile` PATH / docker group steps skip when already applied
 - **Partial runs** — state is written only on success  
 
 ### Legacy migration
@@ -241,13 +241,16 @@ Debian `docker.io` (engine + CLI). Bootstrap stays on this: apt-native, no vendo
 | `<admin>` (`$SUDO_USER`) | Yes (from OS install) | As configured during Debian install | Same host SSH key as hermes (appended if not already present) | `docker` |
 | `hermes` (or config override) | No | Disabled | Same host SSH key from config | `docker` |
 
-Bootstrap writes `/etc/profile.d/00-local-bin.sh` once:
+Bootstrap writes `/etc/profile.d/00-local-bin.sh` once (before `mise.sh`, see [MISE.md](MISE.md)):
 
 ```bash
-export PATH="${HOME}/.local/bin:${PATH}"
+case ":${PATH}:" in
+  *:"${HOME}/.local/bin":*) ;;
+  *) export PATH="${HOME}/.local/bin:${PATH}" ;;
+esac
 ```
 
-SSH logins pick it up. Why the `00-` prefix: [MISE.md](MISE.md).
+Stock `~/.profile` also prepends that dir. Bootstrap makes that block skip if it is already on `PATH`, and drops a stray `export PATH="$HOME/.local/bin:$PATH"` from `~/.bashrc` (uv/pip sometimes add one). Login `PATH` has `~/.local/bin` once.
 
 ## After running
 

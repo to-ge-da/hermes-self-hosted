@@ -198,6 +198,7 @@ Then open a new login session so PATH no longer references mise shims.
 | `No version is set for shim: yq` | Host pin installed but not `use -g` | Re-run `./scripts/mise.sh install` (do not `mise use -g` by hand) |
 | Other user: `mise: command not found` | Method 1 only (`~/.local/bin/mise`) | `sudo ./scripts/mise.sh system-wide` (method 2) |
 | Login PATH is only mise shims + `/usr/bin` (no `~/.local/bin`) | Missing `/etc/profile.d/00-local-bin.sh`, or it sourced after `mise.sh` | Re-run bootstrap (plants the `00-` file), then a new login |
+| `~/.local/bin` appears twice on login PATH | Stock `~/.profile` plus `00-local-bin.sh` or a stray `~/.bashrc` export | Re-run bootstrap (makes `.profile` skip duplicates, strips the bashrc line), then a new login |
 | Tools missing in new SSH session | `profile.d` not sourced | Use a login shell; confirm Bourne-compatible shell |
 | `mise: command not found` at login | Binary gone but `profile.d` remains | `sudo ./scripts/mise.sh system-wide --remove` |
 | PATH still has mise after uninstall | System-wide file left behind | Same `--remove` step, then new login |

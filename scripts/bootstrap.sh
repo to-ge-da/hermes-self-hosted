@@ -172,8 +172,8 @@ run_as_admin() {
 }
 
 # Host-level PATH for user-local tools. 00- so this sources before mise.sh;
-# activate then snapshots a PATH that already has ~/.local/bin. Unconditional
-# export: the directory may appear mid-session; bash ignores a missing entry.
+# activate then snapshots a PATH that already has ~/.local/bin. Prepend once:
+# bash ignores a missing entry; skip if a later ~/.profile would duplicate it.
 write_profile_d_local_bin() {
     local tmp
 
@@ -184,10 +184,13 @@ write_profile_d_local_bin() {
 # /etc/profile.d/00-local-bin.sh — user-local tools on PATH
 #
 # Sourced by Bourne-compatible login shells, before mise.sh (00- prefix).
-# Unconditional: the directory may appear mid-session; bash ignores a
+# Prepend once: the directory may appear mid-session; bash ignores a
 # missing PATH entry. Owned by bootstrap, not mise.
 
-export PATH="${HOME}/.local/bin:${PATH}"
+case ":${PATH}:" in
+  *:"${HOME}/.local/bin":*) ;;
+  *) export PATH="${HOME}/.local/bin:${PATH}" ;;
+esac
 EOF
 
     if [[ -f "$PROFILE_D_LOCAL_BIN" ]] && cmp -s "$tmp" "$PROFILE_D_LOCAL_BIN"; then
@@ -213,6 +216,83 @@ ensure_local_bin_dir() {
     chown "$user:" "$home/.local" "$home/.local/bin"
     chmod 755 "$home/.local/bin"
     log "$user: $home/.local/bin ready."
+}
+
+# Stock ~/.profile prepends ~/.local/bin whenever the dir exists. 00-local-bin.sh
+# already did that for the mise snapshot, so make the stock block skip duplicates.
+make_profile_local_bin_once() {
+    local user="$1"
+    local home profile tmp
+    home="$(getent passwd "$user" | cut -d: -f6)"
+    profile="${home}/.profile"
+    [[ -n "$home" && -f "$profile" ]] || return 0
+
+    # Exit codes: 0=already patched, 10=patched, 20=no stock block, 30=error.
+    # Distinct codes so a Python failure (e.g. UnicodeDecodeError on a
+    # non-UTF-8 ~/.profile) can never be mistaken for a successful patch.
+    tmp="$(mktemp)"
+    local rc=0
+    python3 - "$profile" "$tmp" <<'PY' || rc=$?
+import pathlib, sys
+
+src, dst = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+try:
+    text = src.read_text()
+    old = '''if [ -d "$HOME/.local/bin" ] ; then
+    PATH="$HOME/.local/bin:$PATH"
+fi'''
+    new = '''if [ -d "$HOME/.local/bin" ] ; then
+    case ":$PATH:" in
+        *:"$HOME/.local/bin":*) ;;
+        *) PATH="$HOME/.local/bin:$PATH" ;;
+    esac
+fi'''
+    if new in text:
+        sys.exit(0)
+    if old not in text:
+        sys.exit(20)
+    dst.write_text(text.replace(old, new, 1))
+except Exception as exc:  # SystemExit passes through (BaseException)
+    print(f"local-bin patch failed: {exc}", file=sys.stderr)
+    sys.exit(30)
+sys.exit(10)
+PY
+    case "$rc" in
+        0)
+            log "$user: ~/.profile already skips a duplicate ~/.local/bin."
+            ;;
+        10)
+            if [[ -s "$tmp" ]]; then
+                cat "$tmp" > "$profile"
+                chown "$user:" "$profile"
+                log "$user: ~/.profile prepends ~/.local/bin at most once."
+            else
+                warn "$user: patched ~/.profile came back empty — left as-is."
+            fi
+            ;;
+        20)
+            warn "$user: ~/.profile has no stock ~/.local/bin block — left as-is."
+            ;;
+        *)
+            warn "$user: could not patch ~/.profile (rc=$rc) — left as-is."
+            ;;
+    esac
+    rm -f "$tmp"
+}
+
+# uv / pip / agents sometimes append this; ~/.profile already prepends the dir.
+strip_bashrc_local_bin_export() {
+    local user="$1"
+    local home bashrc
+    home="$(getent passwd "$user" | cut -d: -f6)"
+    bashrc="${home}/.bashrc"
+    [[ -n "$home" && -f "$bashrc" ]] || return 0
+
+    if grep -Eq '^export PATH="\$HOME/\.local/bin:\$\{?PATH\}?"[[:space:]]*$' "$bashrc"; then
+        sed -i -E '/^export PATH="\$HOME\/\.local\/bin:\$\{?PATH\}?"[[:space:]]*$/d' "$bashrc"
+        chown "$user:" "$bashrc"
+        log "$user: removed extra ~/.local/bin export from ~/.bashrc."
+    fi
 }
 
 # docker.io creates the group. hermes has no sudo — membership is how
@@ -677,6 +757,10 @@ else
 fi
 
 ensure_local_bin_dir "$HERMES_USER"
+make_profile_local_bin_once "$ADMIN_USER"
+make_profile_local_bin_once "$HERMES_USER"
+strip_bashrc_local_bin_export "$ADMIN_USER"
+strip_bashrc_local_bin_export "$HERMES_USER"
 ensure_user_in_group "$ADMIN_USER" docker
 ensure_user_in_group "$HERMES_USER" docker
 
