@@ -1,36 +1,128 @@
 # Installation
 
-Ordered path to deploy **one** Hermes Agent instance on Debian.
+Ordered path to deploy **one** Hermes Agent instance on Debian. Follow this page on a fresh VM. Linked guides are detail, not extra steps.
 
 **Today:** self-hosted (local machine or local VM) only.  
 **Not covered yet:** VPS, Amazon EC2, multi-instance.
 
-This page is a map of steps and links. Each linked guide has the full procedure.
+Work as the **admin** user (the account created at Debian install — e.g. `testnet`). Do not run the Hermes installer as root.
+
+Keep the **private** SSH key on the workstation. Bootstrap plants the matching **public** key on admin and `hermes`. After hardening, password SSH is off — connect with `ssh -i`.
 
 ## Prerequisites
 
 - Fresh Debian Server with an admin user
-- `git` and `curl` on the host — Debian 13 netinst + SSH server + standard system utilities does **not** ship them:
+- `git` and `curl`:
 
   ```bash
   sudo apt install -y git curl
   ```
 
-  `git` clones the repo on the host; `curl` installs mise. No git: copy the repo with [FILE-TRANSFER.md](FILE-TRANSFER.md) (`scp`). `curl` is still required. Bootstrap installs both again later (idempotent).
-- Repo clone on the host (or files copied over — see [FILE-TRANSFER.md](FILE-TRANSFER.md))
-- Mise + host pins installed — see [MISE.md](MISE.md). Method 1: `./scripts/mise.sh install` (admin user only). Method 2: `sudo ./scripts/mise.sh install --system-wide` (shared `/usr/local/bin/mise` + `profile.d`). Uses `mise.host.toml`.
+  No git: copy the repo with [FILE-TRANSFER.md](FILE-TRANSFER.md) (`scp`). `curl` is still required.
 
-## Install order (self-hosted)
+## 1. Clone (or copy) the repo
 
-1. **Mise host tools (prerequisite)** — `./scripts/mise.sh install` so bootstrap can use host-pinned `yq` (`mise.host.toml`, not the local toolchain). That is method 1 (admin user only). For a shared binary that every login user can see: `sudo ./scripts/mise.sh install --system-wide` (`/usr/local/bin/mise` + `profile.d`). See [MISE.md](MISE.md).
-2. **File transfer (as needed)** — Copy config, keys, or the repo to the host with `scp` / `rsync`. See [FILE-TRANSFER.md](FILE-TRANSFER.md).
-3. **Bootstrap** — Config-driven first-boot setup (`hostname`, hermes user, SSH keys). See [`scripts/bootstrap.sh`](../scripts/bootstrap.sh) and [BOOTSTRAP.md](BOOTSTRAP.md).
-4. **Hardening** — Firewall, kernel, auditd, SSH lockdown. See [`scripts/hardening.sh`](../scripts/hardening.sh) and [HARDENING.md](HARDENING.md).
-5. **Network** — Static IP and DNS. See [NETWORK.md](NETWORK.md).
-6. **Install Hermes Agent** — Non-interactive official installer as the `hermes` user (system packages come from bootstrap). See [install.md](hermes/install.md).
+Run every later `./scripts/…` from this directory (repo root), not from `scripts/`.
+
+```bash
+git clone https://github.com/to-ge-da/hermes-self-hosted.git
+cd hermes-self-hosted
+```
+
+## 2. Mise host tools
+
+Shared `/usr/local/bin/mise` + `profile.d` so admin and `hermes` both see it. Host-pinned `yq` from `mise.host.toml`.
+
+```bash
+sudo ./scripts/mise.sh install --system-wide
+```
+
+Detail: [MISE.md](MISE.md).
+
+## 3. Bootstrap config
+
+```bash
+cp config/bootstrap.example.yaml ./bootstrap.yaml
+# edit hostname, timezone, ssh.public_key (or ssh.public_key_file)
+```
+
+SSH key: [SSH-KEYS.md](SSH-KEYS.md). Copy files to the host: [FILE-TRANSFER.md](FILE-TRANSFER.md).
+
+## 4. Bootstrap
+
+```bash
+sudo ./scripts/bootstrap.sh --config ./bootstrap.yaml
+```
+
+Creates the `hermes` user (no password, no sudo), packages, PATH, SSH key on admin + hermes. `apt upgrade` may install a new kernel; reboot is after hardening. Detail: [BOOTSTRAP.md](BOOTSTRAP.md).
+
+## 5. Hardening (recommended)
+
+Skip on a throwaway smoke VM if you want.
+
+```bash
+sudo ./scripts/hardening.sh
+```
+
+Debian may open a needrestart TUI during `apt` — continue, do not treat it as the reboot. When you see `HARDENING COMPLETE`:
+
+```bash
+sudo reboot
+```
+
+SSH password auth is now off. From the workstation (same private key as the YAML):
+
+```bash
+ssh -i ~/.ssh/<private-key> <admin>@<host>
+```
+
+A `~/.ssh/config` `Host` alias only matches that name, not a raw `user@ip`. Detail: [HARDENING.md](HARDENING.md), [SSH-KEYS.md](SSH-KEYS.md).
+
+## 6. Network (as needed)
+
+Static IP / DNS: [NETWORK.md](NETWORK.md).
+
+## 7. Install Hermes Agent
+
+Stay logged in as **admin**. Install **as** `hermes` (`-H` sets `HOME=/home/hermes`). `cd` first: `bash -lc` does **not** change directory, so `uv` would see admin's `~/.venv` and fail. Do not use `sudo -E` (keeps admin `HOME`). Do not run the installer as root.
+
+```bash
+sudo -u hermes -H bash -lc 'cd && curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup --non-interactive'
+```
+
+Equivalent: `ssh -i ~/.ssh/<private-key> hermes@<host>` then the same `curl | bash` (see [install.md](hermes/install.md)).
+
+Check:
+
+```bash
+sudo -u hermes -H bash -lc 'cd && hermes --version'
+# must not exist:
+# ls /home/<admin>/.hermes  /root/.hermes
+```
+
+Code: `/home/hermes/.hermes/hermes-agent/`. CLI: `/home/hermes/.local/bin/hermes`. Packages already came from bootstrap — `hermes` must not call `sudo`.
+
+## 8. Playwright OS libraries
+
+`hermes` has no sudo, so the installer skipped `--with-deps`. Chromium is already in the hermes cache. As **admin**, from the clone (do **not** `cd` into `/home/hermes` — it is not traversable):
+
+```bash
+sudo ./scripts/playwright.sh
+```
+
+Detail: [install.md](hermes/install.md#playwright--chromium).
+
+## 9. Verify as `hermes`
+
+```bash
+ssh -i ~/.ssh/<private-key> hermes@<host>
+hermes doctor
+```
+
+Look for Playwright Chromium. Provider / API key: [install.md](hermes/install.md).
 
 ## Related
 
-- Deployment targets and limits: [README.md](../README.md)
-- Uninstall Hermes Agent: [uninstall.md](hermes/uninstall.md)
-- Run the dashboard as a background service: [dashboard-service.md](hermes/dashboard-service.md)
+- Deployment targets: [README.md](../README.md)
+- Uninstall: [uninstall.md](hermes/uninstall.md)
+- Dashboard service: [dashboard-service.md](hermes/dashboard-service.md)
