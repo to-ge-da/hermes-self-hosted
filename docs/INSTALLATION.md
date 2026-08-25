@@ -27,12 +27,10 @@ cd hermes-self-hosted
 
 ## 2. Mise host tools
 
-Bootstrap needs host-pinned `yq` (`mise.host.toml`).
+Shared `/usr/local/bin/mise` + `profile.d` so admin and `hermes` both see it. Host-pinned `yq` from `mise.host.toml`.
 
 ```bash
-./scripts/mise.sh install
-# every login user should see mise:
-# sudo ./scripts/mise.sh install --system-wide
+sudo ./scripts/mise.sh install --system-wide
 ```
 
 Detail: [MISE.md](MISE.md).
