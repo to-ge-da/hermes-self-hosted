@@ -22,6 +22,11 @@
 
 set -euo pipefail
 
+# Unattended apt: needrestart's default is an ncurses TUI.
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=l
+export APT_LISTCHANGES_FRONTEND=none
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ──────────────────────
