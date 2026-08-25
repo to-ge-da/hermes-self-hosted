@@ -355,11 +355,44 @@ MISEEOF
     log "Wrote $PROFILE_D_FILE (new login sessions pick it up)."
 }
 
+# ponytail: [tools] key = "ver" only; nested tables need a real toml parser
+host_tools_from_toml() {
+    awk '
+        /^\[tools\]/ { t=1; next }
+        /^\[/ { t=0; next }
+        t && /^[[:space:]]*#/ { next }
+        t && NF >= 3 {
+            v = $3
+            gsub(/"/, "", v)
+            print $1, v
+        }
+    ' "${REPO_ROOT}/mise.host.toml"
+}
+
+# mise.host.toml loads only with -E host. Login shims need a version in
+# an always-loaded config. Uninstall already runs `mise unuse -g`.
+pin_host_tools_global() {
+    local line tool version
+    while IFS= read -r line; do
+        [[ -n "$line" ]] || continue
+        tool="${line%% *}"
+        version="${line#* }"
+        [[ -n "$tool" && -n "$version" && "$tool" != "$version" ]] \
+            || err "Could not parse host tools from ${REPO_ROOT}/mise.host.toml."
+        log "Pinning ${tool}@${version} globally for ${TARGET_USER}..."
+        run_as_target "mise use -g --pin --yes $(printf '%q' "${tool}@${version}")" \
+            || err "Failed to pin ${tool}@${version} globally. Re-run: $0 install"
+    done <<< "$(host_tools_from_toml)"
+}
+
 install_host_pins() {
     log "Installing host pins from ${REPO_ROOT}/mise.host.toml..."
     run_mise_host install
+    pin_host_tools_global
     run_mise_host exec -- yq --version >/dev/null \
         || err "mise is installed but yq is not available. Check ${REPO_ROOT}/mise.host.toml and re-run: $0 install"
+    run_as_target "PATH=$(printf '%q' "${TARGET_HOME}/.local/share/mise/shims"):\$PATH yq --version >/dev/null" \
+        || err "yq shim has no version. Re-run: $0 install"
 
     local version
     version="$(run_as_target 'mise --version' | head -n1 | tr -d '\r')"
