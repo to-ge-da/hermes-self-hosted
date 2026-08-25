@@ -7,6 +7,8 @@ Ordered path to deploy **one** Hermes Agent instance on Debian. Follow this page
 
 Work as the **admin** user (the account created at Debian install — e.g. `testnet`). Do not run the Hermes installer as root.
 
+Keep the **private** SSH key on the workstation. Bootstrap plants the matching **public** key on admin and `hermes`. After hardening, password SSH is off — connect with `ssh -i`.
+
 ## Prerequisites
 
 - Fresh Debian Server with an admin user
@@ -19,6 +21,8 @@ Work as the **admin** user (the account created at Debian install — e.g. `test
   No git: copy the repo with [FILE-TRANSFER.md](FILE-TRANSFER.md) (`scp`). `curl` is still required.
 
 ## 1. Clone (or copy) the repo
+
+Run every later `./scripts/…` from this directory (repo root), not from `scripts/`.
 
 ```bash
 git clone https://github.com/to-ge-da/hermes-self-hosted.git
@@ -50,7 +54,7 @@ SSH key: [SSH-KEYS.md](SSH-KEYS.md). Copy files to the host: [FILE-TRANSFER.md](
 sudo ./scripts/bootstrap.sh --config ./bootstrap.yaml
 ```
 
-Creates the `hermes` user (no password, no sudo), packages, PATH, SSH key on admin + hermes. Detail: [BOOTSTRAP.md](BOOTSTRAP.md).
+Creates the `hermes` user (no password, no sudo), packages, PATH, SSH key on admin + hermes. `apt upgrade` may install a new kernel; reboot is after hardening. Detail: [BOOTSTRAP.md](BOOTSTRAP.md).
 
 ## 5. Hardening (recommended)
 
@@ -60,7 +64,19 @@ Skip on a throwaway smoke VM if you want.
 sudo ./scripts/hardening.sh
 ```
 
-Detail: [HARDENING.md](HARDENING.md).
+Debian may open a needrestart TUI during `apt` — continue, do not treat it as the reboot. When you see `HARDENING COMPLETE`:
+
+```bash
+sudo reboot
+```
+
+SSH password auth is now off. From the workstation (same private key as the YAML):
+
+```bash
+ssh -i ~/.ssh/<private-key> <admin>@<host>
+```
+
+A `~/.ssh/config` `Host` alias only matches that name, not a raw `user@ip`. Detail: [HARDENING.md](HARDENING.md), [SSH-KEYS.md](SSH-KEYS.md).
 
 ## 6. Network (as needed)
 
@@ -68,25 +84,42 @@ Static IP / DNS: [NETWORK.md](NETWORK.md).
 
 ## 7. Install Hermes Agent
 
-Stay logged in as **admin**. Install **as** `hermes` (`-H` sets `HOME=/home/hermes`). Do not use `sudo -E` (keeps admin `HOME`). Do not run the installer as root.
+Stay logged in as **admin**. Install **as** `hermes` (`-H` sets `HOME=/home/hermes`). `cd` first: `bash -lc` does **not** change directory, so `uv` would see admin's `~/.venv` and fail. Do not use `sudo -E` (keeps admin `HOME`). Do not run the installer as root.
 
 ```bash
-sudo -u hermes -H bash -lc 'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup --non-interactive'
+sudo -u hermes -H bash -lc 'cd && curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup --non-interactive'
 ```
 
-Equivalent: `ssh hermes@<host>` then the same `curl | bash` (see [install.md](hermes/install.md)).
+Equivalent: `ssh -i ~/.ssh/<private-key> hermes@<host>` then the same `curl | bash` (see [install.md](hermes/install.md)).
 
 Check:
 
 ```bash
-sudo -u hermes -H bash -lc 'hermes --version'
+sudo -u hermes -H bash -lc 'cd && hermes --version'
 # must not exist:
 # ls /home/<admin>/.hermes  /root/.hermes
 ```
 
 Code: `/home/hermes/.hermes/hermes-agent/`. CLI: `/home/hermes/.local/bin/hermes`. Packages already came from bootstrap — `hermes` must not call `sudo`.
 
-Playwright OS libs (admin): [install.md](hermes/install.md#playwright--chromium). Provider/API key: same file.
+## 8. Playwright OS libraries
+
+`hermes` has no sudo, so the installer skipped `--with-deps`. Chromium is already in the hermes cache. As **admin**, from the clone (do **not** `cd` into `/home/hermes` — it is not traversable):
+
+```bash
+sudo ./scripts/playwright.sh
+```
+
+Detail: [install.md](hermes/install.md#playwright--chromium).
+
+## 9. Verify as `hermes`
+
+```bash
+ssh -i ~/.ssh/<private-key> hermes@<host>
+hermes doctor
+```
+
+Look for Playwright Chromium. Provider / API key: [install.md](hermes/install.md).
 
 ## Related
 
