@@ -111,19 +111,17 @@ hermes chat -q "Hello, are you working?"
 
 Upstream [hermes-agent#93357](https://github.com/NousResearch/hermes-agent/pull/93357) (merged 2026-08-24) pins Playwright **1.62.1**. That closed the Node 26 extract hang ([#76312](https://github.com/NousResearch/hermes-agent/issues/76312)). Fresh official installs download Chromium during `install.sh`.
 
-`hermes` still has **no sudo**, so the installer skips `--with-deps`. After Step 2, as **admin**:
+`hermes` still has **no sudo**, so the installer skips `--with-deps`. After Step 2, as **admin** from this clone:
 
 ```bash
-cd /home/hermes/.hermes/hermes-agent && sudo npx playwright install-deps chromium
-# or from this clone:
-sudo ./scripts/playwright.sh --deps
+sudo ./scripts/playwright.sh
 ```
+
+Uses hermes's `npx`/`node` (`~hermes/.hermes/node/bin`) — `sudo npx` on a clean PATH fails with `env: 'node': No such file or directory`. Do not log out; this is not a login PATH issue.
 
 Then as `hermes`: `hermes doctor` — look for `Playwright Chromium (browser engine)`.
 
 `--skip-browser` is optional (headless host, no browser tools). It is not in the recommended command.
-
-Already installed with `--skip-browser`, or a leftover hung 1.58.2 cache: as `hermes` run `./scripts/playwright.sh` (unpacks the zip). Then admin `--deps` as above.
 
 ## Installer flags
 
@@ -197,7 +195,7 @@ This repo: **do not use** in the recommended command. Playwright **1.62.1**
 (upstream [#93357](https://github.com/NousResearch/hermes-agent/pull/93357))
 fixed the Node 26 extract hang. Add the flag only if you do not want browser
 tools. To enable later: `npx playwright install chromium` as `hermes`, then
-admin `install-deps` — or `scripts/playwright.sh`. See
+admin `sudo ./scripts/playwright.sh`. See
 [Playwright / Chromium](#playwright--chromium).
 
 #### `--skip-computer-use`
