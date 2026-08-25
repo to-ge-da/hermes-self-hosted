@@ -227,45 +227,57 @@ make_profile_local_bin_once() {
     profile="${home}/.profile"
     [[ -n "$home" && -f "$profile" ]] || return 0
 
+    # Exit codes: 0=already patched, 10=patched, 20=no stock block, 30=error.
+    # Distinct codes so a Python failure (e.g. UnicodeDecodeError on a
+    # non-UTF-8 ~/.profile) can never be mistaken for a successful patch.
     tmp="$(mktemp)"
     local rc=0
     python3 - "$profile" "$tmp" <<'PY' || rc=$?
 import pathlib, sys
 
 src, dst = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
-text = src.read_text()
-old = '''if [ -d "$HOME/.local/bin" ] ; then
+try:
+    text = src.read_text()
+    old = '''if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
 fi'''
-new = '''if [ -d "$HOME/.local/bin" ] ; then
+    new = '''if [ -d "$HOME/.local/bin" ] ; then
     case ":$PATH:" in
         *:"$HOME/.local/bin":*) ;;
         *) PATH="$HOME/.local/bin:$PATH" ;;
     esac
 fi'''
-if new in text:
-    sys.exit(0)
-if old not in text:
-    sys.exit(2)
-dst.write_text(text.replace(old, new, 1))
-sys.exit(1)
+    if new in text:
+        sys.exit(0)
+    if old not in text:
+        sys.exit(20)
+    dst.write_text(text.replace(old, new, 1))
+except Exception as exc:  # SystemExit passes through (BaseException)
+    print(f"local-bin patch failed: {exc}", file=sys.stderr)
+    sys.exit(30)
+sys.exit(10)
 PY
     case "$rc" in
         0)
-            rm -f "$tmp"
             log "$user: ~/.profile already skips a duplicate ~/.local/bin."
             ;;
-        1)
-            cat "$tmp" > "$profile"
-            rm -f "$tmp"
-            chown "$user:" "$profile"
-            log "$user: ~/.profile prepends ~/.local/bin at most once."
+        10)
+            if [[ -s "$tmp" ]]; then
+                cat "$tmp" > "$profile"
+                chown "$user:" "$profile"
+                log "$user: ~/.profile prepends ~/.local/bin at most once."
+            else
+                warn "$user: patched ~/.profile came back empty — left as-is."
+            fi
             ;;
-        *)
-            rm -f "$tmp"
+        20)
             warn "$user: ~/.profile has no stock ~/.local/bin block — left as-is."
             ;;
+        *)
+            warn "$user: could not patch ~/.profile (rc=$rc) — left as-is."
+            ;;
     esac
+    rm -f "$tmp"
 }
 
 # uv / pip / agents sometimes append this; ~/.profile already prepends the dir.
@@ -276,9 +288,8 @@ strip_bashrc_local_bin_export() {
     bashrc="${home}/.bashrc"
     [[ -n "$home" && -f "$bashrc" ]] || return 0
 
-    if grep -Eq '^export PATH="\$HOME/\.local/bin:\$\{?PATH\}?"$' "$bashrc"; then
-        sed -i.bak -E '/^export PATH="\$HOME\/\.local\/bin:\$\{?PATH\}?"$/d' "$bashrc"
-        rm -f "${bashrc}.bak"
+    if grep -Eq '^export PATH="\$HOME/\.local/bin:\$\{?PATH\}?"[[:space:]]*$' "$bashrc"; then
+        sed -i -E '/^export PATH="\$HOME\/\.local\/bin:\$\{?PATH\}?"[[:space:]]*$/d' "$bashrc"
         chown "$user:" "$bashrc"
         log "$user: removed extra ~/.local/bin export from ~/.bashrc."
     fi
