@@ -41,7 +41,7 @@ Bootstrap runs `mise -E host exec -- yq` (root `mise.toml` ignored) to parse the
 
 Root [`mise.toml`](../mise.toml) is the **local toolchain** — what you get with `mise install` in a clone. Today that pins `shellcheck`. Those tools must not land on a fresh Debian host.
 
-Host pins stay on the **admin user** even with method 2. This script installs the **mise binary** for every login (method 2); it does not run `mise install --system` for tools.
+Host pins stay on the **admin user** even with method 2. After install, that user also gets `mise use -g --pin` so login shims resolve (`yq` works without `-E host`). This script installs the **mise binary** for every login (method 2); it does not run `mise install --system` for tools.
 
 ### Why not bare `mise -E host`
 
@@ -107,11 +107,11 @@ mise --version
 command -v mise
 # method 2: /usr/local/bin/mise  |  method 1: ~/.local/bin/mise
 
-# workstation toolchain
+# workstation toolchain (clone; not installed by mise.sh)
 mise exec -- shellcheck --version
 
-# host pins (same ignore as the wrappers)
-MISE_IGNORED_CONFIG_PATHS="$PWD/mise.toml" mise -E host exec -- yq --version
+# host pins (admin user, after mise.sh install)
+yq --version
 ```
 
 After method 2, verify as a **different** login user (new login shell):
@@ -171,7 +171,7 @@ That still only covers users who already have a `mise` binary.
 `uninstall` removes mise from the admin account:
 
 1. `mise uninstall --all` — remove installed tool versions
-2. `mise unuse -g …` — clear global tool config
+2. `mise unuse -g …` — clear global tool config (the pins `install` wrote with `mise use -g`)
 3. Capture paths from `mise implode -n --config` and delete them (skips `/usr/local/bin/mise` unless `--system-wide`)
 4. Remove well-known user paths (`~/.local/bin/mise`, `~/.local/share/mise`, …)
 5. Strip `mise activate` lines from `~/.bashrc` (backup: `~/.bashrc.bak`)
@@ -195,6 +195,7 @@ Then open a new login session so PATH no longer references mise shims.
 | Symptom | Likely cause | Solution |
 |---|---|---|
 | Bootstrap: mise/yq not ready | Tools not installed for `$SUDO_USER` | `./scripts/mise.sh install` |
+| `No version is set for shim: yq` | Host pin installed but not `use -g` | Re-run `./scripts/mise.sh install` (do not `mise use -g` by hand) |
 | Other user: `mise: command not found` | Method 1 only (`~/.local/bin/mise`) | `sudo ./scripts/mise.sh system-wide` (method 2) |
 | Login PATH is only mise shims + `/usr/bin` (no `~/.local/bin`) | Missing `/etc/profile.d/00-local-bin.sh`, or it sourced after `mise.sh` | Re-run bootstrap (plants the `00-` file), then a new login |
 | Tools missing in new SSH session | `profile.d` not sourced | Use a login shell; confirm Bourne-compatible shell |
