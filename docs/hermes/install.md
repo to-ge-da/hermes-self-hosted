@@ -283,7 +283,7 @@ With `--non-interactive`, `--stage setup` and `--stage gateway` are skipped
 the manifest.
 
 This repo: **do not use**. Headless Debian does not build `Hermes.app`.
-Gateway setup is a later step on this page, not an installer stage.
+The gateway **user unit** is a later step on this page (`hermes gateway install`), not an installer stage.
 
 ### Install dependencies only
 
@@ -310,25 +310,33 @@ This repo: **do not use as the install**. Bootstrap already installs
 
 ## Gateway (24/7 access)
 
-To make Hermes accessible from messaging platforms (Telegram, Discord, etc.):
+The messaging gateway is a **systemd user** unit (`hermes-gateway.service`). Install it from the admin session, **as** `hermes`, after Playwright — same pattern as the agent install. Platforms (Telegram, Discord, …) are a later step; the unit runs empty until a token is in `~/.hermes/.env`.
+
+Stay logged in as **admin**. `-H` sets `HOME=/home/hermes`; `cd` first because `bash -lc` does not change directory. Do not use `sudo -E`. Do not run these commands as admin or root.
 
 ```bash
-# Configure platforms
-hermes gateway setup
-
-# Start gateway in background
-hermes gateway install
-hermes gateway start
-
-# Check status
-hermes gateway status
+sudo -u hermes -H bash -lc 'cd && hermes gateway install && hermes gateway start && hermes gateway status'
 ```
 
-Linger for `hermes` is enabled by [bootstrap](../BOOTSTRAP.md), so the user unit survives logout and reboot. Hosts bootstrapped before that (`Linger=no`):
+Equivalent: `ssh -i ~/.ssh/<private-key> hermes@<host>` then `hermes gateway install && hermes gateway start && hermes gateway status`.
+
+| Command | What it does |
+|---------|--------------|
+| `install` | Writes `~/.config/systemd/user/hermes-gateway.service` and `enable`s it (comes up at boot) |
+| `start` | Starts it now — enable does not start until reboot |
+| `status` | Unit state |
+
+Do **not** use `hermes gateway setup` on this path — that is an interactive wizard. Installer `--non-interactive` skipping `--stage gateway` is the **desktop** bootstrap stage, not this CLI.
+
+`--system` is out of scope: `hermes` has no sudo; this repo uses the user unit + linger.
+
+Linger for `hermes` is enabled by [bootstrap](../BOOTSTRAP.md). Hosts bootstrapped before that (`Linger=no`):
 
 ```bash
 sudo loginctl enable-linger hermes
 ```
+
+Stop / remove: [uninstall.md](uninstall.md). Ordered path: [INSTALLATION.md](../INSTALLATION.md).
 
 ## Future automation
 
@@ -341,7 +349,6 @@ curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-
 and extend it with:
 
 - Pre-configured API keys
-- Gateway auto-start as a systemd user service
 - Pre-loaded skills for the target environment
 - Config file templating
 
