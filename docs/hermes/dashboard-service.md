@@ -115,7 +115,9 @@ systemctl --user status hermes-dashboard
 
 ### 3. Survive logout (linger)
 
-User units stop when the last session ends unless linger is enabled:
+[Bootstrap](../BOOTSTRAP.md) enables linger for the **hermes** agent user. Check: `loginctl show-user hermes -p Linger`.
+
+If this unit runs as another user, or the host was bootstrapped before that:
 
 ```bash
 sudo loginctl enable-linger "$USER"

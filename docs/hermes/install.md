@@ -324,7 +324,7 @@ hermes gateway start
 hermes gateway status
 ```
 
-Enable lingering so the gateway survives logout (run as admin):
+Linger for `hermes` is enabled by [bootstrap](../BOOTSTRAP.md), so the user unit survives logout and reboot. Hosts bootstrapped before that (`Linger=no`):
 
 ```bash
 sudo loginctl enable-linger hermes

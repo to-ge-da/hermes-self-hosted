@@ -54,7 +54,9 @@ SSH key: [SSH-KEYS.md](SSH-KEYS.md). Copy files to the host: [FILE-TRANSFER.md](
 sudo ./scripts/bootstrap.sh --config ./bootstrap.yaml
 ```
 
-Creates the `hermes` user (no password, no sudo), packages, PATH, SSH key on admin + hermes. If the script says a reboot is required, `sudo reboot` and SSH back **before** step 5 (password SSH still works). Detail: [BOOTSTRAP.md](BOOTSTRAP.md).
+Creates the `hermes` user (no password, no sudo), packages, PATH, SSH key on admin + hermes, linger on `hermes`. If the script says a reboot is required, `sudo reboot` and SSH back **before** step 5 (password SSH still works). Detail: [BOOTSTRAP.md](BOOTSTRAP.md).
+
+Already bootstrapped without linger: `sudo loginctl enable-linger hermes`. Check: `loginctl show-user hermes -p Linger`.
 
 ## 5. Hardening (recommended)
 

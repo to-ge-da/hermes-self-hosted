@@ -757,6 +757,10 @@ else
     log "User '$HERMES_USER' created (key-only auth, no password, no sudo)."
 fi
 
+# Linger: user systemd (gateway) survives logout/reboot. Not for ADMIN_USER.
+log "Enabling linger for $HERMES_USER..."
+loginctl enable-linger "$HERMES_USER"
+
 ensure_local_bin_dir "$HERMES_USER"
 make_profile_local_bin_once "$ADMIN_USER"
 make_profile_local_bin_once "$HERMES_USER"
@@ -836,7 +840,7 @@ echo -e "  ${BOLD}Timezone${NC}  : ${CYAN}${TZ}${NC}"
 echo -e "  ${BOLD}Config${NC}    : ${CYAN}${CONFIG_PATH}${NC}"
 echo ""
 echo -e "  ${BOLD}Admin${NC}  : ${GREEN}${ADMIN_USER}${NC} (pre-existing, sudo, docker group)"
-echo -e "  ${BOLD}Agent${NC}  : ${GREEN}${HERMES_USER}${NC} (no sudo, key-only, docker group)"
+echo -e "  ${BOLD}Agent${NC}  : ${GREEN}${HERMES_USER}${NC} (no sudo, key-only, docker group, linger)"
 echo -e "  ${BOLD}PATH${NC}   : ${CYAN}${PROFILE_D_LOCAL_BIN}${NC}"
 echo -e "  ${BOLD}Docker${NC} : ${CYAN}docker.io${NC} (re-login as ${ADMIN_USER} / ${HERMES_USER} for the group)"
 echo -e "  ${BOLD}State${NC}  : ${CYAN}${STATE_FILE}${NC}"

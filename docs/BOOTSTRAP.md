@@ -9,6 +9,7 @@ It exists to turn a bare Debian install into a consistent base:
 - Apply hostname, timezone, and locale from a YAML config
 - Install packages in four groups (host baseline, network stack, Hermes deps, Docker)
 - Create the **hermes** agent user (key-only SSH, no sudo by default)
+- Enable linger for **hermes** (not admin) so systemd user units survive logout and boot
 - Add **admin and hermes** to the `docker` group
 - Install one host SSH public key on **admin and hermes** (append if missing)
 - Lock the root account and ensure SSH drop-in config dir exists
@@ -148,6 +149,7 @@ Legacy flags (`--hostname`, `--timezone`, `--ssh-key`) and interactive prompts a
 | User PATH | Writes `/etc/profile.d/00-local-bin.sh`; stock `~/.profile` skips a second prepend |
 | Admin user | Detected via `$SUDO_USER` — existing account, not created; `docker` group; creates `~/.local/bin` |
 | Hermes user | Creates agent user from config (default `hermes`, no sudo, key-only); `docker` group; creates `~/.local/bin` |
+| Linger | `loginctl enable-linger` on the agent user only (not admin) |
 | SSH key | Same host key (`ssh.public_key` or `ssh.public_key_file`) appended on **hermes and admin** if missing |
 | Root lock | Locks root account |
 | SSH drop-in dir | Creates `/etc/ssh/sshd_config.d/` |
@@ -177,7 +179,7 @@ MISE_VERSION=2024.x.x
 ```
 
 - **CONFIG_HASH** — SHA-256 of config **file contents** (not the path); changes are logged on re-run  
-- **Idempotency** — hostname / user / SSH key / `00-local-bin.sh` / `~/.profile` PATH / docker group steps skip when already applied
+- **Idempotency** — hostname / user / linger / SSH key / `00-local-bin.sh` / `~/.profile` PATH / docker group steps skip when already applied
 - **Partial runs** — state is written only on success  
 
 ### Legacy migration
@@ -236,10 +238,10 @@ Debian `docker.io` (engine + CLI). Bootstrap stays on this: apt-native, no vendo
 
 ## Users after bootstrap
 
-| User | Sudo | Password | Auth | Extra groups |
-|------|------|----------|------|--------------|
-| `<admin>` (`$SUDO_USER`) | Yes (from OS install) | As configured during Debian install | Same host SSH key as hermes (appended if not already present) | `docker` |
-| `hermes` (or config override) | No | Disabled | Same host SSH key from config | `docker` |
+| User | Sudo | Password | Auth | Extra groups | Linger |
+|------|------|----------|------|--------------|--------|
+| `<admin>` (`$SUDO_USER`) | Yes (from OS install) | As configured during Debian install | Same host SSH key as hermes (appended if not already present) | `docker` | No |
+| `hermes` (or config override) | No | Disabled | Same host SSH key from config | `docker` | Yes |
 
 Bootstrap writes `/etc/profile.d/00-local-bin.sh` once (before `mise.sh`, see [MISE.md](MISE.md)):
 
@@ -271,6 +273,8 @@ sudo ssh-keygen -lf /home/hermes/.ssh/authorized_keys
 Bootstrap **appends** the config key when that type+blob is missing; it does not replace other keys. To remove a key, edit `authorized_keys` — see [SSH-KEYS.md](SSH-KEYS.md).
 
 Docker: after a **new login** as admin or `hermes`, `docker version` (or `docker info`) works without sudo. An existing session will not see the `docker` group until you reconnect.
+
+Linger: `loginctl show-user hermes -p Linger` should print `Linger=yes`. Hosts bootstrapped before this: `sudo loginctl enable-linger hermes`.
 
 Then proceed to [HARDENING.md](HARDENING.md).
 
