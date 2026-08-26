@@ -1,0 +1,16 @@
+{
+  "name": "hermes-self-hosted-site",
+  "private": true,
+  "description": "Build the GitHub Pages product site from site/ + docs/",
+  "scripts": {
+    "build": "node scripts/build-site.mjs",
+    "build:local": "SITE_BASE=/ node scripts/build-site.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "js-yaml": "^4.1.0",
+    "marked": "^15.0.12"
+  }
+}

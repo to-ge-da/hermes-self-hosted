@@ -1,0 +1,6 @@
+# Owner: paste real wallet addresses below. Leave empty until then.
+# Do not commit example or placeholder addresses — empty strings are intentional.
+# The site only renders a coin's donate UI when its address is non-empty.
+
+bitcoin: ""
+monero: ""
