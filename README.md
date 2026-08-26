@@ -4,6 +4,16 @@ Prepare a Debian host and install one Hermes Agent instance. This repo covers bo
 
 One instance per host. VPS and EC2 are not documented yet.
 
+## Product site
+
+GitHub Pages product page (DIY docs + interest in a preinstalled host): built from `site/` + `docs/` via `.github/workflows/pages.yml`.
+
+After Pages is enabled (Settings → Pages → Source: **GitHub Actions**), the site is at `https://to-ge-da.github.io/hermes-self-hosted/`.
+
+### Donations
+
+Bitcoin and Monero only — no pricing table. Addresses live in [`site/donations.yml`](site/donations.yml) (empty until the owner pastes real wallets). The site shows a coin only when its address is non-empty.
+
 ## Stack
 
 - OS: Debian Server
@@ -42,7 +52,7 @@ Install, uninstall, dashboard, and profile templates. Index: [docs/hermes/README
 
 Cursor trees hosted here, not the install path. Index: [docs/forks/README.md](docs/forks/README.md).
 
-Layout: `scripts/` (bootstrap, hardening, mise), `config/` (example bootstrap YAML), `templates/` (profile starters), `docs/`.
+Layout: `scripts/` (bootstrap, hardening, mise), `config/` (example bootstrap YAML), `templates/` (profile starters), `docs/`, `site/` (GitHub Pages product site source).
 
 ## Contributing
 
