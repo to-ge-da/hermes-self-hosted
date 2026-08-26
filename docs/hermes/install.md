@@ -315,16 +315,19 @@ The messaging gateway is a **systemd user** unit (`hermes-gateway.service`). Ins
 Stay logged in as **admin**. `-H` sets `HOME=/home/hermes`; `cd` first because `bash -lc` does not change directory. Do not use `sudo -E`. Do not run these commands as admin or root.
 
 ```bash
-sudo -u hermes -H bash -lc 'cd && hermes gateway install && hermes gateway start && hermes gateway status'
+sudo -u hermes -H bash -lc 'cd && hermes gateway install --start-now --start-on-login && hermes gateway status'
 ```
 
-Equivalent: `ssh -i ~/.ssh/<private-key> hermes@<host>` then `hermes gateway install && hermes gateway start && hermes gateway status`.
+Equivalent: `ssh -i ~/.ssh/<private-key> hermes@<host>` then `hermes gateway install --start-now --start-on-login && hermes gateway status`.
 
-| Command | What it does |
-|---------|--------------|
-| `install` | Writes `~/.config/systemd/user/hermes-gateway.service` and `enable`s it (comes up at boot) |
-| `start` | Starts it now — enable does not start until reboot |
+| Flag / command | What it does |
+|----------------|--------------|
+| `install` | Writes `~/.config/systemd/user/hermes-gateway.service` |
+| `--start-on-login` | Enables it (comes up at boot). Omit → TTY asks |
+| `--start-now` | Starts it now. Omit → TTY asks |
 | `status` | Unit state |
+
+Do not omit the flags on this path. A separate `hermes gateway start` is not needed when `--start-now` is set.
 
 Do **not** use `hermes gateway setup` on this path — that is an interactive wizard. Installer `--non-interactive` skipping `--stage gateway` is the **desktop** bootstrap stage, not this CLI.
 

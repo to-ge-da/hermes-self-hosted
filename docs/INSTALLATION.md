@@ -119,10 +119,10 @@ Detail: [install.md](hermes/install.md#playwright--chromium).
 Stay logged in as **admin**. Same `sudo -u hermes -H` + `cd` as step 7. Do not run `hermes gateway install` as admin — the unit lands in `/home/<admin>/`. `--system` needs sudo; `hermes` has none.
 
 ```bash
-sudo -u hermes -H bash -lc 'cd && hermes gateway install && hermes gateway start && hermes gateway status'
+sudo -u hermes -H bash -lc 'cd && hermes gateway install --start-now --start-on-login && hermes gateway status'
 ```
 
-`install` writes + enables `~/.config/systemd/user/hermes-gateway.service`. `start` is required now — enable does not start until reboot. Linger is already on from bootstrap. Platforms (Telegram, Discord, …) are not this step; the unit runs empty until a token is in `~/.hermes/.env`.
+`--start-now` / `--start-on-login` skip the TTY prompts and start the unit now. Bare `install` asks `Start the gateway now?` then boot-enable — that blocks this path. Linger is already on from bootstrap. Platforms (Telegram, Discord, …) are not this step; the unit runs empty until a token is in `~/.hermes/.env`.
 
 Detail: [install.md](hermes/install.md#gateway-247-access).
 
