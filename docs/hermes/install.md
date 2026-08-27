@@ -310,7 +310,7 @@ This repo: **do not use as the install**. Bootstrap already installs
 
 ## Gateway (24/7 access)
 
-The messaging gateway is a **systemd user** unit (`hermes-gateway.service`). Install it from the admin session, **as** `hermes`, after Playwright — same pattern as the agent install. Platforms (Telegram, Discord, …) are a later step; the unit runs empty until a token is in `~/.hermes/.env`.
+The messaging gateway is a **systemd user** unit (`hermes-gateway.service`). Install it from the admin session, **as** `hermes`, after Playwright — same pattern as the agent install. Platforms are day 2: [gateway-platforms.md](gateway-platforms.md). The unit runs empty until a token is in `~/.hermes/.env`.
 
 Stay logged in as **admin**. `-H` sets `HOME=/home/hermes`; `cd` first because `bash -lc` does not change directory. Do not use `sudo -E`. Do not run these commands as admin or root.
 
@@ -339,7 +339,7 @@ Linger for `hermes` is enabled by [bootstrap](../BOOTSTRAP.md). Hosts bootstrapp
 sudo loginctl enable-linger hermes
 ```
 
-Stop / remove: [uninstall.md](uninstall.md). Ordered path: [INSTALLATION.md](../INSTALLATION.md).
+Stop / remove: [uninstall.md](uninstall.md). Ordered path: [INSTALLATION.md](../INSTALLATION.md). Day 2 platforms: [gateway-platforms.md](gateway-platforms.md).
 
 ## Future automation
 
