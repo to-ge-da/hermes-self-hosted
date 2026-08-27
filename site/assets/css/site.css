@@ -272,7 +272,9 @@ pre {
   min-height: min(92vh, 820px);
   display: flex;
   align-items: flex-end;
-  padding: 5rem 0 4.5rem;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 5rem max(var(--pad), calc((100% - var(--max)) / 2)) 4.5rem;
   border-bottom: 1px solid var(--line);
 }
 
@@ -310,10 +312,11 @@ pre {
 }
 
 .hero-terminal {
-  position: absolute;
-  right: max(2vw, calc((100% - var(--max)) / 2));
-  bottom: 18%;
+  position: relative;
+  right: auto;
+  bottom: auto;
   width: min(420px, 42vw);
+  flex: 0 0 auto;
   padding: 1rem 1.1rem;
   border: 1px solid var(--line);
   background: rgba(17, 22, 20, 0.72);
@@ -341,7 +344,10 @@ pre {
 }
 
 .hero-copy {
+  width: auto;
   max-width: 36rem;
+  margin-inline: 0;
+  flex: 1 1 auto;
   opacity: 0;
   transform: translateY(16px);
   animation: rise-in 0.85s var(--ease) 0.05s forwards;

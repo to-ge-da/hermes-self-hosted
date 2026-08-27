@@ -8,6 +8,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
 import { marked } from "marked";
+import { gfmHeadingId } from "marked-gfm-heading-id";
+
+marked.use(gfmHeadingId({}));
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -237,13 +240,6 @@ function buildHome(donations) {
   const body = `
     <section class="hero">
       <div class="hero-plane" aria-hidden="true"></div>
-      <div class="hero-terminal" aria-hidden="true">
-        <div><span class="ok">✓</span> mise host tools</div>
-        <div><span class="ok">✓</span> bootstrap · hermes user</div>
-        <div><span class="ok">✓</span> hardening · key-only SSH</div>
-        <div><span class="cmd">$</span> hermes gateway status</div>
-        <div class="ok">active (running)</div>
-      </div>
       <div class="wrap hero-copy">
         <p class="hero-brand">Hermes <span>Self-Hosted</span></p>
         <h1>One Debian host. One Hermes Agent. An ordered path to get there.</h1>
@@ -252,6 +248,13 @@ function buildHome(donations) {
           <a class="btn btn-primary" href="${href("docs/INSTALLATION.html")}">DIY install docs</a>
           <a class="btn btn-ghost" href="${href("host.html")}">Get a host with Hermes</a>
         </div>
+      </div>
+      <div class="hero-terminal" aria-hidden="true">
+        <div><span class="ok">✓</span> mise host tools</div>
+        <div><span class="ok">✓</span> bootstrap · hermes user</div>
+        <div><span class="ok">✓</span> hardening · key-only SSH</div>
+        <div><span class="cmd">$</span> hermes gateway status</div>
+        <div class="ok">active (running)</div>
       </div>
     </section>
 
