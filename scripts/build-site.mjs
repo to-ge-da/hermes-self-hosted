@@ -24,6 +24,19 @@ const RAW_BASE = `${REPO}/blob/main`;
 /** Project Pages base path; override with SITE_BASE=/ for local preview. */
 const SITE_BASE = normalizeBase(process.env.SITE_BASE ?? "/hermes-self-hosted/");
 
+/** Production origin for absolute URLs in llms.txt. */
+const SITE_ORIGIN = "https://to-ge-da.github.io";
+
+const EXPECTED_FONTS = [
+  "ibm-plex-mono-400.woff2",
+  "ibm-plex-mono-500.woff2",
+  "spline-sans-400.woff2",
+  "spline-sans-500.woff2",
+  "spline-sans-600.woff2",
+  "syne-600.woff2",
+  "syne-700.woff2",
+];
+
 const INSTALL_DOCS = [
   { file: "INSTALLATION.md", title: "Installation", summary: "Ordered self-hosted install path" },
   { file: "BOOTSTRAP.md", title: "Bootstrap", summary: "First-boot host setup" },
@@ -150,14 +163,13 @@ function layout({ title, description, active, body, path: pagePath }) {
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(fullTitle)}</title>
   <meta name="description" content="${escapeHtml(description)}">
   <link rel="canonical" href="${href(pagePath)}">
   <meta name="color-scheme" content="dark">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Spline+Sans:wght@400;500;600&family=Syne:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="${asset("assets/css/site.css")}">
 </head>
 <body>
@@ -188,6 +200,7 @@ ${body}
         <a href="${href("docs/INSTALLATION.html")}">Install path</a>
         <a href="${href("host.html")}">Host interest</a>
         <a href="${href("")}#donate">Donate</a>
+        <a href="${href("llms.txt")}">llms.txt</a>
         <a href="${REPO}">Repository</a>
       </div>
     </div>
@@ -331,7 +344,7 @@ function buildHome(donations) {
           <li><div><strong>Install Hermes Agent</strong><span>Official installer as the hermes user.</span></div></li>
           <li><div><strong>Playwright libs + gateway</strong><span>OS deps, then gateway user unit.</span></div></li>
         </ol>
-        <p style="margin-top:1.5rem"><a class="btn btn-ghost" href="${href("docs/")}">Browse all docs</a></p>
+        <p class="mt-6"><a class="btn btn-ghost" href="${href("docs/")}">Browse all docs</a></p>
       </div>
     </section>
 
@@ -351,7 +364,7 @@ ${renderDonationsSection(donations)}
 function buildHostPage(donations) {
   const issueUrl = `${REPO}/issues/new?labels=task&title=${encodeURIComponent("[host interest] Preinstalled Hermes host")}`;
   const body = `
-    <section class="section" style="border-bottom:0;padding-bottom:2rem">
+    <section class="section section-flush">
       <div class="wrap">
         <div class="section-head">
           <p class="eyebrow">Paid SKU · early</p>
@@ -390,7 +403,7 @@ function docsNavHtml(currentRel) {
   };
 
   return `<aside class="docs-nav" aria-label="Documentation">
-      <p style="margin:0 0 1rem"><a href="${href("docs/")}">Docs home</a></p>
+      <p class="docs-nav-home"><a href="${href("docs/")}">Docs home</a></p>
 ${group("Install path", INSTALL_DOCS)}
 ${group("Other", OTHER_DOCS)}
     </aside>`;
@@ -456,6 +469,34 @@ function copyAssets() {
   const jsSrc = path.join(SITE_SRC, "assets/js/site.js");
   writeFile(path.join(OUT, "assets/css/site.css"), read(cssSrc));
   writeFile(path.join(OUT, "assets/js/site.js"), read(jsSrc));
+
+  const fontsSrc = path.join(SITE_SRC, "assets/fonts");
+  for (const file of EXPECTED_FONTS) {
+    const fontPath = path.join(fontsSrc, file);
+    if (!fs.existsSync(fontPath)) {
+      throw new Error(`Missing expected font: ${file} (${fontPath})`);
+    }
+  }
+  fs.cpSync(fontsSrc, path.join(OUT, "assets/fonts"), { recursive: true });
+}
+
+/**
+ * Agent-facing index (llmstxt.org). Absolute URLs always use SITE_ORIGIN.
+ * Under SITE_BASE=/ local preview, llms.txt still points at production origin — intended.
+ */
+function buildLlmsTxt() {
+  const item = (d) =>
+    `- [${d.title}](${SITE_ORIGIN}${href(mdToHtmlPath(d.file))}): ${d.summary}`;
+  return `# Hermes Self-Hosted
+> One Debian host, one Hermes Agent instance — ordered install docs rendered from the repo's docs/ markdown.
+Early-stage project. The markdown in docs/ is the source of truth; HTML pages are renderings of it.
+## Install path
+${INSTALL_DOCS.map(item).join("\n")}
+## Other docs
+${OTHER_DOCS.map(item).join("\n")}
+## Optional
+- [Repository](${REPO}): Source markdown under docs/
+`;
 }
 
 function cleanOut() {
@@ -475,6 +516,8 @@ function main() {
     const outRel = mdToHtmlPath(doc.file);
     writeFile(path.join(OUT, outRel), buildDocPage(doc.file, doc.title));
   }
+
+  writeFile(path.join(OUT, "llms.txt"), buildLlmsTxt());
 
   copyAssets();
 

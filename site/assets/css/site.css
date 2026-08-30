@@ -1,5 +1,13 @@
 /* Hermes Self-Hosted — dark, technical, calm */
 
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/ibm-plex-mono-400.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url("../fonts/ibm-plex-mono-500.woff2") format("woff2"); }
+@font-face { font-family: "Spline Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/spline-sans-400.woff2") format("woff2"); }
+@font-face { font-family: "Spline Sans"; font-style: normal; font-weight: 500; font-display: swap; src: url("../fonts/spline-sans-500.woff2") format("woff2"); }
+@font-face { font-family: "Spline Sans"; font-style: normal; font-weight: 600; font-display: swap; src: url("../fonts/spline-sans-600.woff2") format("woff2"); }
+@font-face { font-family: "Syne"; font-style: normal; font-weight: 600; font-display: swap; src: url("../fonts/syne-600.woff2") format("woff2"); }
+@font-face { font-family: "Syne"; font-style: normal; font-weight: 700; font-display: swap; src: url("../fonts/syne-700.woff2") format("woff2"); }
+
 :root {
   --bg: #0a0d0c;
   --bg-elevated: #111614;
@@ -401,6 +409,15 @@ pre {
   border-bottom: 1px solid var(--line);
 }
 
+.section-flush {
+  border-bottom: 0;
+  padding-bottom: 2rem;
+}
+
+.mt-6 {
+  margin-top: 1.5rem;
+}
+
 .section-head {
   max-width: 38rem;
   margin-bottom: 2.25rem;
@@ -698,6 +715,10 @@ pre {
   overflow: auto;
 }
 
+.docs-nav-home {
+  margin: 0 0 1rem;
+}
+
 @media (max-width: 860px) {
   .docs-nav {
     position: static;
@@ -884,7 +905,7 @@ pre {
 
 .docs-index-title {
   font-family: var(--display);
-  font-weight: 650;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
