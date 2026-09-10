@@ -3,18 +3,20 @@
 # hardening.sh — Server security hardening
 # Run AFTER bootstrap.sh as root on a fresh Debian Server.
 #
-# Covers:
+# Covers (in this order — AIDE/rkhunter baselines are recorded last, after
+# every other mutation, so they reflect the final state):
 #   - SSH hardening
 #   - Firewall (UFW)
 #   - Fail2Ban
+#   - Unattended security upgrades
 #   - Kernel hardening (sysctl)
-#   - Auditd
-#   - AIDE (integrity monitoring)
-#   - rkhunter (rootkit detection)
+#   - Resource limits
 #   - AppArmor
+#   - Auditd
 #   - File permissions
 #   - Shared memory hardening
-#   - Unattended security upgrades
+#   - AIDE (integrity monitoring)
+#   - rkhunter (rootkit detection)
 #
 # Usage:
 #   sudo ./hardening.sh
@@ -384,35 +386,10 @@ augenrules --load 2>/dev/null || systemctl restart auditd
 log "Auditd configured."
 
 # ──────────────────────
-# 9. AIDE — File Integrity Monitoring
+# 9. File Permissions
 # ──────────────────────
-log "Initializing AIDE..."
-
-apt install -y aide
-
-# aideinit can take a while on slow systems; suppress warnings
-aideinit 2>/dev/null || warn "AIDE init had warnings (non-critical)."
-if [[ -f /var/lib/aide/aide.db.new ]]; then
-    cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-    log "AIDE database initialized."
-else
-    warn "AIDE database file not found. Continuing without integrity baseline."
-fi
-
-# ──────────────────────
-# 10. rkhunter — Rootkit Detection
-# ──────────────────────
-log "Setting up rkhunter..."
-
-apt install -y rkhunter
-
-rkhunter --update 2>/dev/null || warn "rkhunter update had non-critical warnings."
-rkhunter --propupd 2>/dev/null || warn "rkhunter propupd had non-critical warnings."
-log "rkhunter configured."
-
-# ──────────────────────
-# 11. File Permissions
-# ──────────────────────
+# Runs before the AIDE/rkhunter baselines (below) so those baselines are
+# recorded against the final state, not a mid-run snapshot.
 log "Hardening file permissions..."
 
 chmod 700 /root
@@ -429,8 +406,10 @@ chmod 600 /etc/cron.deny
 log "File permissions tightened."
 
 # ──────────────────────
-# 12. Shared Memory Hardening
+# 10. Shared Memory Hardening
 # ──────────────────────
+# Also runs before the AIDE/rkhunter baselines below — /etc/fstab is
+# mutated here and must not still be changing when the baseline is taken.
 log "Hardening /dev/shm..."
 
 mount -o remount,noexec,nosuid,nodev /dev/shm 2>/dev/null || true
@@ -440,6 +419,46 @@ if ! grep -q '/dev/shm' /etc/fstab; then
 fi
 
 log "/dev/shm hardened."
+
+# ──────────────────────
+# 11. AIDE — File Integrity Monitoring
+# ──────────────────────
+# Recorded LAST among the mutating steps (after file permissions and
+# /dev/shm above) so the baseline reflects the final state this script
+# leaves behind, not a mid-run snapshot that the script's own later steps
+# would immediately invalidate.
+log "Initializing AIDE..."
+
+apt install -y aide
+
+# aideinit can take a while on slow systems; suppress warnings
+aideinit 2>/dev/null || warn "AIDE init had warnings (non-critical)."
+if [[ -f /var/lib/aide/aide.db.new ]]; then
+    cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+    log "AIDE database initialized."
+
+    log "Verifying the AIDE baseline is self-consistent (aide --check)..."
+    if aide --check; then
+        log "AIDE baseline verified clean."
+    else
+        warn "aide --check reported differences immediately after building the baseline. This should not happen — investigate before trusting AIDE on this host. Re-run manually: sudo aideinit && sudo cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db"
+    fi
+else
+    warn "AIDE database file not found. Continuing without integrity baseline."
+fi
+
+# ──────────────────────
+# 12. rkhunter — Rootkit Detection
+# ──────────────────────
+# Recorded after all filesystem mutations, same reasoning as the AIDE
+# baseline above.
+log "Setting up rkhunter..."
+
+apt install -y rkhunter
+
+rkhunter --update 2>/dev/null || warn "rkhunter update had non-critical warnings."
+rkhunter --propupd 2>/dev/null || warn "rkhunter propupd had non-critical warnings."
+log "rkhunter configured."
 
 # ──────────────────────
 # Done
