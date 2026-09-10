@@ -187,6 +187,8 @@ ufw allow 22/tcp comment 'SSH'
 ufw --force enable
 
 log "Firewall enabled. SSH (22/tcp) allowed inbound."
+log "NOTE: UFW filters HOST-originated traffic only — it does NOT filter"
+log "Docker-published container ports. See docs/HARDENING.md#ufw-and-docker-published-ports."
 
 # ──────────────────────
 # 3. Fail2Ban
@@ -470,7 +472,7 @@ echo "=================================="
 echo ""
 echo "Applied:"
 echo "  ✓ SSH hardened (keys only, no root)"
-echo "  ✓ UFW enabled (SSH only inbound)"
+echo "  ✓ UFW enabled — HOST traffic only (SSH inbound); does NOT filter Docker-published ports"
 echo "  ✓ Fail2Ban (SSH brute-force protection)"
 echo "  ✓ Unattended security upgrades"
 echo "  ✓ Kernel hardening (sysctl)"
@@ -480,6 +482,12 @@ echo "  ✓ rkhunter (rootkit detection)"
 echo "  ✓ AppArmor enabled (distro profiles/modes untouched)"
 echo "  ✓ File permissions hardened"
 echo "  ✓ /dev/shm secured (noexec,nosuid,nodev)"
+echo ""
+echo "Docker + UFW: UFW filters HOST-originated inbound traffic only. It does"
+echo "NOT filter Docker-published container ports (Docker inserts its own"
+echo "iptables rules ahead of ufw's forward chain). Bind container ports to"
+echo "127.0.0.1 to keep them off the LAN, e.g. \"127.0.0.1:8080:80\", not"
+echo "\"8080:80\". Detail: docs/HARDENING.md#ufw-and-docker-published-ports."
 echo ""
 echo "Reboot to apply all changes:"
 echo "  sudo reboot"

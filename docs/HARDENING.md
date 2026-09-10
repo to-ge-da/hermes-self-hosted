@@ -7,7 +7,7 @@ Server security hardening. Run **after** [bootstrap](BOOTSTRAP.md).
 | Category | What it applies |
 |----------|----------------|
 | SSH | Key-only auth, no root login, rate limiting |
-| Firewall | UFW — deny inbound, allow SSH (22/tcp); ping stays allowed via UFW `before.rules` |
+| Firewall | UFW — deny inbound, allow SSH (22/tcp); ping stays allowed via UFW `before.rules`. **Host traffic only** — see [UFW and Docker-published ports](#ufw-and-docker-published-ports) |
 | Brute-force | Fail2Ban — 3 attempts, 1h ban |
 | Auto-updates | Unattended security upgrades (no auto-reboot) |
 | Kernel | 16 sysctl parameters (ASLR, SYN cookies, pointer restrictions, etc.) |
@@ -30,6 +30,24 @@ ssh admin@<server-ip>
 chmod +x /home/admin/hardening.sh
 sudo ./hardening.sh
 ```
+
+## UFW and Docker-published ports
+
+`hardening.sh` enables UFW with `default deny incoming` and only `22/tcp` allowed. That guarantee covers **host** traffic — anything hitting the machine directly. It does **not** cover Docker-published container ports.
+
+Docker's default `iptables=true` inserts its own `DOCKER` chains in `filter` and `nat`, plus a `FORWARD -j DOCKER` jump rule, and those are evaluated **before** UFW's forward chain. A container published with `-p 8080:80` (or `"8080:80"` in Compose) binds `0.0.0.0:8080` and is reachable from the whole LAN **regardless of UFW's `default deny incoming`**.
+
+**Do not rely on UFW to protect a container port.** Instead, bind the port to localhost so it never leaves the host:
+
+```yaml
+ports:
+  - "127.0.0.1:8080:80"   # host-local only — correct for anything not meant to be public
+# NOT: "8080:80"          # binds 0.0.0.0 — reachable from the whole LAN, UFW does not stop it
+```
+
+If a service must be reachable from the LAN or the internet, publish it explicitly (`0.0.0.0:PORT:PORT` or the bare `PORT:PORT` form) and treat that as a deliberate, reviewed exposure — not something UFW is filtering for you.
+
+This project does not recommend disabling Docker's iptables integration (`"iptables": false` in `/etc/docker/daemon.json`) to make UFW authoritative again. That is a heavier, non-default path that requires hand-written `DOCKER-USER` rules to avoid silently blocking all container traffic; the bind-address pattern above is simpler and does not require touching Docker's networking.
 
 ## AppArmor
 
@@ -151,7 +169,7 @@ After bootstrap, the admin already has the host config key (appended if it was m
 # Check SSH config
 sshd -T | grep -E "(permitroot|passwordauth|pubkey)"
 
-# Check firewall
+# Check firewall (host traffic only — see UFW and Docker-published ports above)
 sudo ufw status verbose
 
 # Check Fail2Ban
