@@ -13,11 +13,11 @@ Server security hardening. Run **after** [bootstrap](BOOTSTRAP.md).
 | Kernel | 16 sysctl parameters (ASLR, SYN cookies, pointer restrictions, etc.) |
 | Resource limits | Disable core dumps for all users |
 | Mandatory access | AppArmor verified enabled. Distro-shipped profiles and modes are **not** modified — see [AppArmor](#apparmor) |
-| Auditing | auditd — monitor auth, user/group changes, sudo, cron, time, kernel modules |
-| Integrity | AIDE file integrity database |
-| Rootkits | rkhunter with updated signatures |
+| Auditing | auditd — monitor auth, user/group changes, sudo, cron, time, kernel modules; rule load is verified |
 | File permissions | `/root` 700, `/etc/shadow` 600, crontab restricted to root |
-| Shared memory | `/dev/shm` mounted noexec, nosuid, nodev |
+| Shared memory | `/dev/shm` mounted noexec, nosuid, nodev, verified |
+| Integrity | AIDE file integrity database — baseline recorded **after** every other step above, so it reflects the final state |
+| Rootkits | rkhunter with updated signatures — baseline recorded after every other step, same reasoning |
 | Container runtime | Smoke test (`docker run --rm alpine:latest true`) — the script fails loudly if it does not pass |
 
 ## Usage
@@ -187,6 +187,9 @@ sudo auditctl -l
 
 # Check /dev/shm
 mount | grep /dev/shm
+
+# Check the AIDE baseline is clean (recorded after every other step above)
+sudo aide --check
 
 # Container runtime smoke test — the same gate hardening.sh ends with.
 # A hardened, working host prints "OK" and exits 0. If AppArmor profiles
