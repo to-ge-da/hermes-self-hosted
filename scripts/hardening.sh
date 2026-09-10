@@ -3,18 +3,21 @@
 # hardening.sh — Server security hardening
 # Run AFTER bootstrap.sh as root on a fresh Debian Server.
 #
-# Covers:
+# Covers (in this order — AIDE/rkhunter baselines are recorded last, after
+# every other mutation, so they reflect the final state):
 #   - SSH hardening
 #   - Firewall (UFW)
 #   - Fail2Ban
+#   - Unattended security upgrades
 #   - Kernel hardening (sysctl)
+#   - Resource limits
+#   - AppArmor (verified enabled, distro profiles/modes not modified)
 #   - Auditd
-#   - AIDE (integrity monitoring)
-#   - rkhunter (rootkit detection)
-#   - AppArmor
 #   - File permissions
 #   - Shared memory hardening
-#   - Unattended security upgrades
+#   - AIDE (integrity monitoring)
+#   - rkhunter (rootkit detection)
+#   - Container runtime smoke test
 #
 # Usage:
 #   sudo ./hardening.sh
@@ -43,6 +46,15 @@ source "$SCRIPT_DIR/lib/banner.sh"
 log()  { echo -e "${GREEN}[HARDENING]${NC} $1"; }
 warn() { echo -e "${YELLOW}[HARDENING]${NC} $1"; }
 err()  { echo -e "${RED}[HARDENING]${NC} $1" >&2; exit 1; }
+
+# Per-step outcome tracking so the completion summary reflects reality
+# instead of a hardcoded list of checkmarks (see docs/HARDENING.md).
+# APPLIED: the step ran and is in effect.
+# SKIPPED: the step legitimately does not apply on this host.
+# FAILED:  the step did not complete; hardening is incomplete.
+APPLIED=()
+SKIPPED=()
+FAILED=()
 
 usage() {
     cat <<EOF
@@ -168,6 +180,7 @@ chmod 600 "$SSH_HARDENED"
 sshd -t || err "SSH configuration test failed. Fix errors before continuing."
 systemctl restart sshd
 log "SSH hardened. Config written to $SSH_HARDENED"
+APPLIED+=("SSH: key-only auth, no root login, rate-limited (AllowUsers: $SSH_USERS)")
 
 # ──────────────────────
 # 2. Firewall (UFW)
@@ -185,6 +198,9 @@ ufw allow 22/tcp comment 'SSH'
 ufw --force enable
 
 log "Firewall enabled. SSH (22/tcp) allowed inbound."
+log "NOTE: UFW filters HOST-originated traffic only — it does NOT filter"
+log "Docker-published container ports. See docs/HARDENING.md#ufw-and-docker-published-ports."
+APPLIED+=("UFW: default deny incoming, SSH (22/tcp) allowed — HOST traffic only, does NOT filter Docker-published ports")
 
 # ──────────────────────
 # 3. Fail2Ban
@@ -211,7 +227,10 @@ EOF
 
 systemctl enable fail2ban
 systemctl restart fail2ban
+systemctl is-active --quiet fail2ban \
+    || err "fail2ban failed to start. Check: systemctl status fail2ban"
 log "Fail2Ban configured and started."
+APPLIED+=("Fail2Ban: SSH brute-force protection (3 attempts, 1h ban)")
 
 # ──────────────────────
 # 4. Unattended Security Upgrades
@@ -237,6 +256,7 @@ APT::Periodic::AutocleanInterval "7";
 EOF
 
 log "Unattended security upgrades configured."
+APPLIED+=("Unattended upgrades: security-only, no auto-reboot")
 
 # ──────────────────────
 # 5. Kernel Hardening (sysctl)
@@ -292,6 +312,7 @@ EOF
 
 sysctl --system
 log "Kernel hardening applied."
+APPLIED+=("Kernel hardening: sysctl parameters applied (ASLR, SYN cookies, pointer restrictions, etc.)")
 
 # ──────────────────────
 # 6. Resource Limits
@@ -305,18 +326,41 @@ root hard core 0
 EOF
 
 log "Resource limits set."
+APPLIED+=("Resource limits: core dumps disabled for all users")
 
 # ──────────────────────
 # 7. AppArmor
 # ──────────────────────
-log "Enabling AppArmor..."
+# Debian ships AppArmor enabled by default, with curated profile modes —
+# many profiles are intentionally flags=(unconfined) or flags=(complain)
+# so a process gets a label instead of running fully "unconfined". Do NOT
+# run `aa-enforce` (or any policy tool) against a glob of /etc/apparmor.d/*:
+# it rewrites each matched profile in place and strips those flags,
+# turning unconfined/complain profiles into empty enforce-mode jails with
+# zero file rules — i.e. default-deny. That has broken Docker (runc could
+# not even load libseccomp) and Electron/browser sandboxes on real hosts.
+#
+# This script only verifies AppArmor is enabled; it never edits profiles.
+# Any future opt-in mode change belongs here as an explicit, curated list
+# of profile names passed individually — never a glob.
+#
+# Recovery for a host already damaged by an older version of this script:
+# see docs/HARDENING.md#apparmor-recovery.
+log "Checking AppArmor..."
 
 if systemctl list-unit-files apparmor.service &>/dev/null; then
     apt install -y apparmor apparmor-utils
-    aa-enforce /etc/apparmor.d/* 2>/dev/null || true
-    log "AppArmor enforced."
+    systemctl enable --now apparmor
+
+    if ! aa-status --enabled; then
+        err "AppArmor is installed but 'aa-status --enabled' reports it is not enabled. Docker and other sandboxed apps rely on AppArmor being active. Check: systemctl status apparmor, journalctl -u apparmor."
+    fi
+
+    log "AppArmor enabled. Distro-shipped profiles and modes left unmodified."
+    APPLIED+=("AppArmor: enabled and verified (aa-status --enabled) — distro profiles/modes untouched")
 else
-    warn "AppArmor not available in this environment. Skipping."
+    warn "AppArmor not available in this environment (no apparmor.service unit). Skipping."
+    SKIPPED+=("AppArmor: apparmor.service unit not found on this host")
 fi
 
 # ──────────────────────
@@ -327,7 +371,9 @@ log "Configuring auditd..."
 apt install -y auditd
 
 systemctl enable auditd
-systemctl start auditd 2>/dev/null || warn "auditd already running or started."
+systemctl restart auditd
+systemctl is-active --quiet auditd \
+    || err "auditd failed to start after installation. Check: systemctl status auditd"
 
 cat > /etc/audit/rules.d/audit.rules << 'EOF'
 # Clear existing rules
@@ -360,39 +406,28 @@ cat > /etc/audit/rules.d/audit.rules << 'EOF'
 -a always,exit -F arch=b64 -S init_module -S finit_module -k module_load
 EOF
 
-augenrules --load 2>/dev/null || systemctl restart auditd
-log "Auditd configured."
-
-# ──────────────────────
-# 9. AIDE — File Integrity Monitoring
-# ──────────────────────
-log "Initializing AIDE..."
-
-apt install -y aide
-
-# aideinit can take a while on slow systems; suppress warnings
-aideinit 2>/dev/null || warn "AIDE init had warnings (non-critical)."
-if [[ -f /var/lib/aide/aide.db.new ]]; then
-    cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-    log "AIDE database initialized."
-else
-    warn "AIDE database file not found. Continuing without integrity baseline."
+# augenrules is the normal loader; a full restart is a legitimate fallback
+# if it fails — but the fallback's outcome is verified below rather than
+# assumed. Neither path silences stderr: real errors must be visible.
+if ! augenrules --load; then
+    warn "augenrules --load failed; falling back to a full auditd restart to load rules from disk."
+    systemctl restart auditd
 fi
 
-# ──────────────────────
-# 10. rkhunter — Rootkit Detection
-# ──────────────────────
-log "Setting up rkhunter..."
+systemctl is-active --quiet auditd \
+    || err "auditd is not active after loading audit rules. Check: systemctl status auditd"
 
-apt install -y rkhunter
+auditctl -l | grep -q '^-w ' \
+    || err "auditd is active but no watch rules are loaded. Check: auditctl -l and /etc/audit/rules.d/audit.rules"
 
-rkhunter --update 2>/dev/null || warn "rkhunter update had non-critical warnings."
-rkhunter --propupd 2>/dev/null || warn "rkhunter propupd had non-critical warnings."
-log "rkhunter configured."
+log "Auditd configured; rules verified active via auditctl -l."
+APPLIED+=("Auditd: running, watch rules verified via auditctl -l")
 
 # ──────────────────────
-# 11. File Permissions
+# 9. File Permissions
 # ──────────────────────
+# Runs before the AIDE/rkhunter baselines (below) so those baselines are
+# recorded against the final state, not a mid-run snapshot.
 log "Hardening file permissions..."
 
 chmod 700 /root
@@ -407,19 +442,127 @@ touch /etc/cron.deny
 chmod 600 /etc/cron.deny
 
 log "File permissions tightened."
+APPLIED+=("File permissions: /root 700, /etc/shadow+gshadow 600, crontab restricted to root")
 
 # ──────────────────────
-# 12. Shared Memory Hardening
+# 10. Shared Memory Hardening
 # ──────────────────────
+# Also runs before the AIDE/rkhunter baselines below — /etc/fstab is
+# mutated here and must not still be changing when the baseline is taken.
 log "Hardening /dev/shm..."
 
-mount -o remount,noexec,nosuid,nodev /dev/shm 2>/dev/null || true
+mount -o remount,noexec,nosuid,nodev /dev/shm \
+    || err "Failed to remount /dev/shm with noexec,nosuid,nodev. Check: mount | grep /dev/shm"
+
+SHM_OPTS="$(findmnt -no OPTIONS /dev/shm)"
+for opt in noexec nosuid nodev; do
+    [[ ",$SHM_OPTS," == *",$opt,"* ]] \
+        || err "/dev/shm remount succeeded but is missing the '$opt' option. Current options: $SHM_OPTS"
+done
 
 if ! grep -q '/dev/shm' /etc/fstab; then
     echo 'tmpfs /dev/shm tmpfs defaults,noexec,nosuid,nodev 0 0' >> /etc/fstab
 fi
 
-log "/dev/shm hardened."
+log "/dev/shm hardened (noexec,nosuid,nodev) and persisted in /etc/fstab."
+APPLIED+=("/dev/shm: mounted noexec,nosuid,nodev, verified, persisted via /etc/fstab")
+
+# ──────────────────────
+# 11. AIDE — File Integrity Monitoring
+# ──────────────────────
+# Recorded LAST among the mutating steps (after file permissions and
+# /dev/shm above) so the baseline reflects the final state this script
+# leaves behind, not a mid-run snapshot that the script's own later steps
+# would immediately invalidate.
+log "Initializing AIDE..."
+
+apt install -y aide
+
+aideinit \
+    || err "aideinit failed. No file-integrity baseline was recorded. Check /var/log/aide/*.log, then re-run 'sudo aideinit' manually before trusting AIDE on this host."
+
+if [[ -f /var/lib/aide/aide.db.new ]]; then
+    cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+    log "AIDE database initialized."
+else
+    err "aideinit reported success but /var/lib/aide/aide.db.new is missing. No baseline recorded."
+fi
+
+log "Verifying the AIDE baseline is self-consistent (aide --check)..."
+if aide --check; then
+    log "AIDE baseline verified clean."
+    APPLIED+=("AIDE: baseline recorded after all filesystem mutations, verified clean (aide --check)")
+else
+    warn "aide --check reported differences immediately after building the baseline. This should not happen — investigate before trusting AIDE on this host. Re-run manually: sudo aideinit && sudo cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db"
+    FAILED+=("AIDE: baseline recorded but 'aide --check' is not clean — see warning above")
+fi
+
+# ──────────────────────
+# 12. rkhunter — Rootkit Detection
+# ──────────────────────
+log "Setting up rkhunter..."
+
+apt install -y rkhunter
+
+if rkhunter --update; then
+    log "rkhunter signatures updated."
+else
+    warn "rkhunter --update failed (see output above — often just no network access to the mirrors). Continuing with the packaged signatures."
+    SKIPPED+=("rkhunter: signature update failed, using packaged signatures")
+fi
+
+# Recorded after all filesystem mutations, same reasoning as the AIDE
+# baseline above.
+if rkhunter --propupd; then
+    log "rkhunter baseline (file properties database) updated."
+    APPLIED+=("rkhunter: baseline recorded after all filesystem mutations (propupd)")
+else
+    warn "rkhunter --propupd failed. No rootkit-detection baseline was recorded — run 'sudo rkhunter --propupd' manually before trusting rkhunter checks on this host."
+    FAILED+=("rkhunter: baseline NOT recorded (propupd failed)")
+fi
+
+log "rkhunter configured."
+
+# ──────────────────────
+# 13. Container Runtime Smoke Test
+# ──────────────────────
+# Regression gate for the AppArmor bug that shipped in an earlier version
+# of this script: a healthy `systemctl is-active docker` (or an AppArmor
+# "enabled" message) is NOT proof that containers can actually start — a
+# daemon with a broken runc still reports active. This is the check that
+# would have caught it, run every time hardening.sh runs.
+#
+# Idempotent / safe to re-run: `--rm` leaves no orphaned containers, and
+# the image is only removed afterwards if this step is the one that
+# pulled it (so a pre-existing local image is left alone).
+log "Verifying the container runtime can start a container..."
+
+SMOKE_IMAGE="alpine:latest"
+
+if ! command -v docker >/dev/null 2>&1; then
+    warn "Docker is not installed. Skipping the container runtime smoke test."
+    SKIPPED+=("Container runtime: docker not installed, smoke test skipped")
+else
+    SMOKE_IMAGE_PULLED=false
+    if ! docker image inspect "$SMOKE_IMAGE" >/dev/null 2>&1; then
+        log "Pulling $SMOKE_IMAGE for the container smoke test..."
+        docker pull "$SMOKE_IMAGE" \
+            || err "Could not pull $SMOKE_IMAGE to run the container smoke test. Check network access and: systemctl status docker."
+        SMOKE_IMAGE_PULLED=true
+    fi
+
+    if docker run --rm "$SMOKE_IMAGE" true; then
+        log "Container smoke test passed: 'docker run --rm $SMOKE_IMAGE true' exited 0."
+        APPLIED+=("Container runtime: verified (docker run --rm $SMOKE_IMAGE true exited 0)")
+    else
+        err "Docker cannot start containers. Check AppArmor profiles, then re-run. See docs/HARDENING.md#apparmor-recovery for the recovery procedure."
+    fi
+
+    if [[ "$SMOKE_IMAGE_PULLED" == true ]]; then
+        docker rmi "$SMOKE_IMAGE" >/dev/null 2>&1 \
+            || warn "Could not remove $SMOKE_IMAGE after the smoke test (non-critical; leaves the image cached)."
+    fi
+fi
 
 # ──────────────────────
 # Done
@@ -430,18 +573,37 @@ echo "  HARDENING COMPLETE"
 echo "=================================="
 echo ""
 echo "Applied:"
-echo "  ✓ SSH hardened (keys only, no root)"
-echo "  ✓ UFW enabled (SSH only inbound)"
-echo "  ✓ Fail2Ban (SSH brute-force protection)"
-echo "  ✓ Unattended security upgrades"
-echo "  ✓ Kernel hardening (sysctl)"
-echo "  ✓ Auditd (system event monitoring)"
-echo "  ✓ AIDE (file integrity)"
-echo "  ✓ rkhunter (rootkit detection)"
-echo "  ✓ AppArmor enforced"
-echo "  ✓ File permissions hardened"
-echo "  ✓ /dev/shm secured (noexec,nosuid,nodev)"
+for item in "${APPLIED[@]}"; do
+    echo "  ✓ $item"
+done
+
+if [[ ${#SKIPPED[@]} -gt 0 ]]; then
+    echo ""
+    echo "Skipped:"
+    for item in "${SKIPPED[@]}"; do
+        echo "  – $item"
+    done
+fi
+
+if [[ ${#FAILED[@]} -gt 0 ]]; then
+    echo ""
+    echo "FAILED — hardening is INCOMPLETE (see warnings above):"
+    for item in "${FAILED[@]}"; do
+        echo "  ✗ $item"
+    done
+fi
+
+echo ""
+echo "Docker + UFW: UFW filters HOST-originated inbound traffic only. It does"
+echo "NOT filter Docker-published container ports (Docker inserts its own"
+echo "iptables rules ahead of ufw's forward chain). Bind container ports to"
+echo "127.0.0.1 to keep them off the LAN, e.g. \"127.0.0.1:8080:80\", not"
+echo "\"8080:80\". Detail: docs/HARDENING.md#ufw-and-docker-published-ports."
 echo ""
 echo "Reboot to apply all changes:"
 echo "  sudo reboot"
 echo "=================================="
+
+if [[ ${#FAILED[@]} -gt 0 ]]; then
+    exit 1
+fi

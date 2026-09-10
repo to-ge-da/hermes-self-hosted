@@ -7,17 +7,18 @@ Server security hardening. Run **after** [bootstrap](BOOTSTRAP.md).
 | Category | What it applies |
 |----------|----------------|
 | SSH | Key-only auth, no root login, rate limiting |
-| Firewall | UFW — deny inbound, allow SSH (22/tcp); ping stays allowed via UFW `before.rules` |
+| Firewall | UFW — deny inbound, allow SSH (22/tcp); ping stays allowed via UFW `before.rules`. **Host traffic only** — see [UFW and Docker-published ports](#ufw-and-docker-published-ports) |
 | Brute-force | Fail2Ban — 3 attempts, 1h ban |
 | Auto-updates | Unattended security upgrades (no auto-reboot) |
 | Kernel | 16 sysctl parameters (ASLR, SYN cookies, pointer restrictions, etc.) |
 | Resource limits | Disable core dumps for all users |
-| Mandatory access | AppArmor enforced on all profiles |
-| Auditing | auditd — monitor auth, user/group changes, sudo, cron, time, kernel modules |
-| Integrity | AIDE file integrity database |
-| Rootkits | rkhunter with updated signatures |
+| Mandatory access | AppArmor verified enabled. Distro-shipped profiles and modes are **not** modified — see [AppArmor](#apparmor) |
+| Auditing | auditd — monitor auth, user/group changes, sudo, cron, time, kernel modules; rule load is verified |
 | File permissions | `/root` 700, `/etc/shadow` 600, crontab restricted to root |
-| Shared memory | `/dev/shm` mounted noexec, nosuid, nodev |
+| Shared memory | `/dev/shm` mounted noexec, nosuid, nodev, verified |
+| Integrity | AIDE file integrity database — baseline recorded **after** every other step above, so it reflects the final state |
+| Rootkits | rkhunter with updated signatures — baseline recorded after every other step, same reasoning |
+| Container runtime | Smoke test (`docker run --rm alpine:latest true`) — the script fails loudly if it does not pass |
 
 ## Usage
 
@@ -30,6 +31,56 @@ ssh admin@<server-ip>
 chmod +x /home/admin/hardening.sh
 sudo ./hardening.sh
 ```
+
+## UFW and Docker-published ports
+
+`hardening.sh` enables UFW with `default deny incoming` and only `22/tcp` allowed. That guarantee covers **host** traffic — anything hitting the machine directly. It does **not** cover Docker-published container ports.
+
+Docker's default `iptables=true` inserts its own `DOCKER` chains in `filter` and `nat`, plus a `FORWARD -j DOCKER` jump rule, and those are evaluated **before** UFW's forward chain. A container published with `-p 8080:80` (or `"8080:80"` in Compose) binds `0.0.0.0:8080` and is reachable from the whole LAN **regardless of UFW's `default deny incoming`**.
+
+**Do not rely on UFW to protect a container port.** Instead, bind the port to localhost so it never leaves the host:
+
+```yaml
+ports:
+  - "127.0.0.1:8080:80"   # host-local only — correct for anything not meant to be public
+# NOT: "8080:80"          # binds 0.0.0.0 — reachable from the whole LAN, UFW does not stop it
+```
+
+If a service must be reachable from the LAN or the internet, publish it explicitly (`0.0.0.0:PORT:PORT` or the bare `PORT:PORT` form) and treat that as a deliberate, reviewed exposure — not something UFW is filtering for you.
+
+This project does not recommend disabling Docker's iptables integration (`"iptables": false` in `/etc/docker/daemon.json`) to make UFW authoritative again. That is a heavier, non-default path that requires hand-written `DOCKER-USER` rules to avoid silently blocking all container traffic; the bind-address pattern above is simpler and does not require touching Docker's networking.
+
+## AppArmor
+
+`hardening.sh` **verifies** AppArmor is enabled (`aa-status --enabled`); it does not modify any profile. It fails loudly (`err`) if AppArmor is not enabled.
+
+AppArmor on Debian is enabled by default, and many of the distro-shipped profiles are intentionally not in enforce mode — e.g. `runc`, `firefox`, and most Electron apps ship `flags=(unconfined)`, and `unprivileged_userns` ships `flags=(complain)`. Those flags exist so the process gets a *name* under AppArmor instead of running fully unconfined; they are not a bug to "fix".
+
+An earlier version of this script ran `aa-enforce /etc/apparmor.d/* 2>/dev/null || true`. `aa-enforce` rewrites the matched profile file and **strips its mode flags** — it does not just "turn on enforce mode" for an already-working profile. On a real host this rewrote 95 of 97 distro profiles into empty, default-deny enforcing profiles, which broke `runc` (no container could start — Docker failed with `runc did not terminate successfully: exit status 127`, because AppArmor denied `runc` from even loading `libseccomp.so.2`) and broke unprivileged-userns sandboxes used by browsers and Electron apps. `2>/dev/null || true` hid the failure and the script still reported `✓ AppArmor enforced`.
+
+Any future opt-in mode change for a specific profile must use an explicit, curated list of profile names — never a glob over `/etc/apparmor.d/*`.
+
+### AppArmor recovery
+
+If a host was hardened by a version of this script that ran `aa-enforce` on the glob, restore the distro-shipped profiles from the package:
+
+```bash
+sudo cp -a /etc/apparmor.d /root/apparmor.d.bak-$(date +%F)   # optional, keep the damaged copy
+sudo apt-get install --reinstall -y -o Dpkg::Options::="--force-confnew" apparmor
+sudo systemctl reload apparmor
+sudo systemctl restart docker
+docker run --rm alpine:latest true   # must exit 0
+```
+
+If the reload alone does not clear a stale compiled policy, force a reload through the parser and confirm the kernel's view directly:
+
+```bash
+sudo rm -rf /var/cache/apparmor/*
+sudo apparmor_parser --write-cache --replace -- /etc/apparmor.d
+grep -E '^(runc|unprivileged_userns) ' /sys/kernel/security/apparmor/profiles
+```
+
+A successful `systemctl reload apparmor` (or `active` service state) is **not** proof the kernel policy actually changed — always confirm with a real `docker run --rm alpine:latest true`, not a unit/service check.
 
 ## SSH hardening — detailed rationale
 
@@ -119,7 +170,7 @@ After bootstrap, the admin already has the host config key (appended if it was m
 # Check SSH config
 sshd -T | grep -E "(permitroot|passwordauth|pubkey)"
 
-# Check firewall
+# Check firewall (host traffic only — see UFW and Docker-published ports above)
 sudo ufw status verbose
 
 # Check Fail2Ban
@@ -128,12 +179,32 @@ sudo fail2ban-client status sshd
 # Check kernel params
 sudo sysctl -a | grep -E "(rp_filter|syncookies|kptr|dmesg|randomize)"
 
+# Check AppArmor (should be "Y")
+sudo aa-status --enabled && echo Y
+
 # Check auditd
 sudo auditctl -l
 
 # Check /dev/shm
 mount | grep /dev/shm
+
+# Check the AIDE baseline is clean (recorded after every other step above)
+sudo aide --check
+
+# Container runtime smoke test — the same gate hardening.sh ends with.
+# A hardened, working host prints "OK" and exits 0. If AppArmor profiles
+# are damaged (see AppArmor recovery above), this is what will catch it —
+# a healthy `docker info` / `systemctl is-active docker` will not.
+docker run --rm alpine:latest echo OK
 ```
+
+Expected output for the last command on a passing host:
+
+```
+OK
+```
+
+If it instead fails with something like `runc did not terminate successfully` or `OCI runtime create failed`, see [AppArmor recovery](#apparmor-recovery).
 
 ## Reboot
 

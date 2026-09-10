@@ -78,6 +78,14 @@ SSH password auth is now off. From the workstation (same private key as the YAML
 ssh -i ~/.ssh/<private-key> <admin>@<host>
 ```
 
+`hardening.sh` already ran a container smoke test and would have failed loudly if it didn't pass — confirm again after the reboot:
+
+```bash
+docker run --rm alpine:latest echo OK
+```
+
+Expect `OK`. A hardened host that can't do this has a broken container runtime (usually AppArmor) — see [HARDENING.md#apparmor-recovery](HARDENING.md#apparmor-recovery) before moving on; every later step runs services in Docker.
+
 A `~/.ssh/config` `Host` alias only matches that name, not a raw `user@ip`. Detail: [HARDENING.md](HARDENING.md), [SSH-KEYS.md](SSH-KEYS.md).
 
 ## 6. Network (as needed)

@@ -690,9 +690,34 @@ apt_install "Hermes Agent system packages" \
 apt_install "Docker packages" docker.io
 if systemctl list-unit-files --type=service --no-legend 2>/dev/null | grep -q '^docker.service'; then
     systemctl enable --now docker
+    systemctl is-active --quiet docker \
+        || err "Docker service is not active after 'enable --now docker'. Check: systemctl status docker"
     log "Docker service enabled and started."
+
+    # "Service is running" is not "runtime works" — a daemon with a broken
+    # runc still reports active. Verify a container actually starts, the
+    # same regression gate hardening.sh runs at the end (docs/HARDENING.md).
+    # Idempotent: --rm leaves no orphaned containers; the image is only
+    # removed afterwards if this step is the one that pulled it.
+    log "Verifying the Docker runtime can start a container..."
+    DOCKER_SMOKE_IMAGE="alpine:latest"
+    DOCKER_SMOKE_PULLED=false
+    if ! docker image inspect "$DOCKER_SMOKE_IMAGE" >/dev/null 2>&1; then
+        docker pull "$DOCKER_SMOKE_IMAGE" \
+            || err "Could not pull $DOCKER_SMOKE_IMAGE to verify the Docker runtime. Check network access."
+        DOCKER_SMOKE_PULLED=true
+    fi
+    if docker run --rm "$DOCKER_SMOKE_IMAGE" true; then
+        log "Docker runtime verified (docker run --rm $DOCKER_SMOKE_IMAGE true exited 0)."
+    else
+        err "Docker service is running but cannot start containers. Check runc/containerd, then re-run bootstrap.sh."
+    fi
+    if [[ "$DOCKER_SMOKE_PULLED" == true ]]; then
+        docker rmi "$DOCKER_SMOKE_IMAGE" >/dev/null 2>&1 \
+            || warn "Could not remove $DOCKER_SMOKE_IMAGE after the runtime check (non-critical; leaves the image cached)."
+    fi
 else
-    warn "docker.service not found after installing docker.io."
+    err "docker.service not found after installing docker.io."
 fi
 
 # ──────────────────────
