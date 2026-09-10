@@ -309,14 +309,34 @@ log "Resource limits set."
 # ──────────────────────
 # 7. AppArmor
 # ──────────────────────
-log "Enabling AppArmor..."
+# Debian ships AppArmor enabled by default, with curated profile modes —
+# many profiles are intentionally flags=(unconfined) or flags=(complain)
+# so a process gets a label instead of running fully "unconfined". Do NOT
+# run `aa-enforce` (or any policy tool) against a glob of /etc/apparmor.d/*:
+# it rewrites each matched profile in place and strips those flags,
+# turning unconfined/complain profiles into empty enforce-mode jails with
+# zero file rules — i.e. default-deny. That has broken Docker (runc could
+# not even load libseccomp) and Electron/browser sandboxes on real hosts.
+#
+# This script only verifies AppArmor is enabled; it never edits profiles.
+# Any future opt-in mode change belongs here as an explicit, curated list
+# of profile names passed individually — never a glob.
+#
+# Recovery for a host already damaged by an older version of this script:
+# see docs/HARDENING.md#apparmor-recovery.
+log "Checking AppArmor..."
 
 if systemctl list-unit-files apparmor.service &>/dev/null; then
     apt install -y apparmor apparmor-utils
-    aa-enforce /etc/apparmor.d/* 2>/dev/null || true
-    log "AppArmor enforced."
+    systemctl enable --now apparmor
+
+    if ! aa-status --enabled; then
+        err "AppArmor is installed but 'aa-status --enabled' reports it is not enabled. Docker and other sandboxed apps rely on AppArmor being active. Check: systemctl status apparmor, journalctl -u apparmor."
+    fi
+
+    log "AppArmor enabled. Distro-shipped profiles and modes left unmodified."
 else
-    warn "AppArmor not available in this environment. Skipping."
+    warn "AppArmor not available in this environment (no apparmor.service unit). Skipping."
 fi
 
 # ──────────────────────
@@ -438,7 +458,7 @@ echo "  ✓ Kernel hardening (sysctl)"
 echo "  ✓ Auditd (system event monitoring)"
 echo "  ✓ AIDE (file integrity)"
 echo "  ✓ rkhunter (rootkit detection)"
-echo "  ✓ AppArmor enforced"
+echo "  ✓ AppArmor enabled (distro profiles/modes untouched)"
 echo "  ✓ File permissions hardened"
 echo "  ✓ /dev/shm secured (noexec,nosuid,nodev)"
 echo ""

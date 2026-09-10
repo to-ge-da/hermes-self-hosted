@@ -12,7 +12,7 @@ Server security hardening. Run **after** [bootstrap](BOOTSTRAP.md).
 | Auto-updates | Unattended security upgrades (no auto-reboot) |
 | Kernel | 16 sysctl parameters (ASLR, SYN cookies, pointer restrictions, etc.) |
 | Resource limits | Disable core dumps for all users |
-| Mandatory access | AppArmor enforced on all profiles |
+| Mandatory access | AppArmor verified enabled. Distro-shipped profiles and modes are **not** modified — see [AppArmor](#apparmor) |
 | Auditing | auditd — monitor auth, user/group changes, sudo, cron, time, kernel modules |
 | Integrity | AIDE file integrity database |
 | Rootkits | rkhunter with updated signatures |
@@ -30,6 +30,38 @@ ssh admin@<server-ip>
 chmod +x /home/admin/hardening.sh
 sudo ./hardening.sh
 ```
+
+## AppArmor
+
+`hardening.sh` **verifies** AppArmor is enabled (`aa-status --enabled`); it does not modify any profile. It fails loudly (`err`) if AppArmor is not enabled.
+
+AppArmor on Debian is enabled by default, and many of the distro-shipped profiles are intentionally not in enforce mode — e.g. `runc`, `firefox`, and most Electron apps ship `flags=(unconfined)`, and `unprivileged_userns` ships `flags=(complain)`. Those flags exist so the process gets a *name* under AppArmor instead of running fully unconfined; they are not a bug to "fix".
+
+An earlier version of this script ran `aa-enforce /etc/apparmor.d/* 2>/dev/null || true`. `aa-enforce` rewrites the matched profile file and **strips its mode flags** — it does not just "turn on enforce mode" for an already-working profile. On a real host this rewrote 95 of 97 distro profiles into empty, default-deny enforcing profiles, which broke `runc` (no container could start — Docker failed with `runc did not terminate successfully: exit status 127`, because AppArmor denied `runc` from even loading `libseccomp.so.2`) and broke unprivileged-userns sandboxes used by browsers and Electron apps. `2>/dev/null || true` hid the failure and the script still reported `✓ AppArmor enforced`.
+
+Any future opt-in mode change for a specific profile must use an explicit, curated list of profile names — never a glob over `/etc/apparmor.d/*`.
+
+### AppArmor recovery
+
+If a host was hardened by a version of this script that ran `aa-enforce` on the glob, restore the distro-shipped profiles from the package:
+
+```bash
+sudo cp -a /etc/apparmor.d /root/apparmor.d.bak-$(date +%F)   # optional, keep the damaged copy
+sudo apt-get install --reinstall -y -o Dpkg::Options::="--force-confnew" apparmor
+sudo systemctl reload apparmor
+sudo systemctl restart docker
+docker run --rm alpine:latest true   # must exit 0
+```
+
+If the reload alone does not clear a stale compiled policy, force a reload through the parser and confirm the kernel's view directly:
+
+```bash
+sudo rm -rf /var/cache/apparmor/*
+sudo apparmor_parser --write-cache --replace -- /etc/apparmor.d
+grep -E '^(runc|unprivileged_userns) ' /sys/kernel/security/apparmor/profiles
+```
+
+A successful `systemctl reload apparmor` (or `active` service state) is **not** proof the kernel policy actually changed — always confirm with a real `docker run --rm alpine:latest true`, not a unit/service check.
 
 ## SSH hardening — detailed rationale
 
@@ -127,6 +159,9 @@ sudo fail2ban-client status sshd
 
 # Check kernel params
 sudo sysctl -a | grep -E "(rp_filter|syncookies|kptr|dmesg|randomize)"
+
+# Check AppArmor (should be "Y")
+sudo aa-status --enabled && echo Y
 
 # Check auditd
 sudo auditctl -l
