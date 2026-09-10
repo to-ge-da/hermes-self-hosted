@@ -18,6 +18,7 @@ Server security hardening. Run **after** [bootstrap](BOOTSTRAP.md).
 | Rootkits | rkhunter with updated signatures |
 | File permissions | `/root` 700, `/etc/shadow` 600, crontab restricted to root |
 | Shared memory | `/dev/shm` mounted noexec, nosuid, nodev |
+| Container runtime | Smoke test (`docker run --rm alpine:latest true`) — the script fails loudly if it does not pass |
 
 ## Usage
 
@@ -186,7 +187,21 @@ sudo auditctl -l
 
 # Check /dev/shm
 mount | grep /dev/shm
+
+# Container runtime smoke test — the same gate hardening.sh ends with.
+# A hardened, working host prints "OK" and exits 0. If AppArmor profiles
+# are damaged (see AppArmor recovery above), this is what will catch it —
+# a healthy `docker info` / `systemctl is-active docker` will not.
+docker run --rm alpine:latest echo OK
 ```
+
+Expected output for the last command on a passing host:
+
+```
+OK
+```
+
+If it instead fails with something like `runc did not terminate successfully` or `OCI runtime create failed`, see [AppArmor recovery](#apparmor-recovery).
 
 ## Reboot
 

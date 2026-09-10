@@ -17,6 +17,7 @@
 #   - Shared memory hardening
 #   - AIDE (integrity monitoring)
 #   - rkhunter (rootkit detection)
+#   - Container runtime smoke test
 #
 # Usage:
 #   sudo ./hardening.sh
@@ -463,6 +464,45 @@ rkhunter --propupd 2>/dev/null || warn "rkhunter propupd had non-critical warnin
 log "rkhunter configured."
 
 # ──────────────────────
+# 13. Container Runtime Smoke Test
+# ──────────────────────
+# Regression gate for the AppArmor bug that shipped in an earlier version
+# of this script: a healthy `systemctl is-active docker` (or an AppArmor
+# "enabled" message) is NOT proof that containers can actually start — a
+# daemon with a broken runc still reports active. This is the check that
+# would have caught it, run every time hardening.sh runs.
+#
+# Idempotent / safe to re-run: `--rm` leaves no orphaned containers, and
+# the image is only removed afterwards if this step is the one that
+# pulled it (so a pre-existing local image is left alone).
+log "Verifying the container runtime can start a container..."
+
+SMOKE_IMAGE="alpine:latest"
+
+if ! command -v docker >/dev/null 2>&1; then
+    warn "Docker is not installed. Skipping the container runtime smoke test."
+else
+    SMOKE_IMAGE_PULLED=false
+    if ! docker image inspect "$SMOKE_IMAGE" >/dev/null 2>&1; then
+        log "Pulling $SMOKE_IMAGE for the container smoke test..."
+        docker pull "$SMOKE_IMAGE" \
+            || err "Could not pull $SMOKE_IMAGE to run the container smoke test. Check network access and: systemctl status docker."
+        SMOKE_IMAGE_PULLED=true
+    fi
+
+    if docker run --rm "$SMOKE_IMAGE" true; then
+        log "Container smoke test passed: 'docker run --rm $SMOKE_IMAGE true' exited 0."
+    else
+        err "Docker cannot start containers. Check AppArmor profiles, then re-run. See docs/HARDENING.md#apparmor-recovery for the recovery procedure."
+    fi
+
+    if [[ "$SMOKE_IMAGE_PULLED" == true ]]; then
+        docker rmi "$SMOKE_IMAGE" >/dev/null 2>&1 \
+            || warn "Could not remove $SMOKE_IMAGE after the smoke test (non-critical; leaves the image cached)."
+    fi
+fi
+
+# ──────────────────────
 # Done
 # ──────────────────────
 echo ""
@@ -482,6 +522,7 @@ echo "  ✓ rkhunter (rootkit detection)"
 echo "  ✓ AppArmor enabled (distro profiles/modes untouched)"
 echo "  ✓ File permissions hardened"
 echo "  ✓ /dev/shm secured (noexec,nosuid,nodev)"
+echo "  ✓ Container runtime verified (docker run --rm alpine:latest true)"
 echo ""
 echo "Docker + UFW: UFW filters HOST-originated inbound traffic only. It does"
 echo "NOT filter Docker-published container ports (Docker inserts its own"

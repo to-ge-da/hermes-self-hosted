@@ -234,7 +234,7 @@ Debian `docker.io` (engine + CLI). Bootstrap stays on this: apt-native, no vendo
 |---------|---------|
 | `docker.io` | Docker engine and CLI for container work on the host |
 
-`systemctl enable --now docker` runs after the package install. Group membership is applied after both users exist (admin already does; hermes is created just before).
+`systemctl enable --now docker` runs after the package install, and bootstrap then runs a container smoke test (`docker run --rm alpine:latest true`) to confirm the runtime actually works — an `active` service is not proof of that on its own. Bootstrap fails loudly (`err`) if the smoke test fails. Group membership is applied after both users exist (admin already does; hermes is created just before).
 
 ## Users after bootstrap
 
