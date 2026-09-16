@@ -14,7 +14,7 @@ Run the Hermes web dashboard (`hermes dashboard`) in the background on Debian / 
 - For Option A: `tmux`, `screen`, or `nohup` available (`tmux` is installed by [bootstrap](../BOOTSTRAP.md))
 - For Option B: `systemd` user session (default on modern Debian; MX Linux with systemd)
 
-There is **no built-in daemon flag** on `hermes dashboard`. Use tmux/nohup/screen or a systemd user unit. (`hermes serve` is a related headless backend — same bind/stop/status flags — not a dashboard daemon mode.)
+There is **no built-in daemon flag** on `hermes dashboard`. Use tmux/nohup/screen or a systemd user unit. (`hermes serve` is the related headless backend — same bind/stop/status flags, no SPA; see [serve.md](serve.md).)
 
 Default bind: `http://127.0.0.1:9119`. Use `--no-open` when running unattended.
 

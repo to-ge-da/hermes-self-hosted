@@ -41,13 +41,14 @@ The ordered path is in [INSTALLATION.md](docs/INSTALLATION.md).
 | [uninstall.md](docs/hermes/uninstall.md) | Remove Hermes Agent |
 | [profile-templates.md](docs/hermes/profile-templates.md) | USER.md / MEMORY.md starters |
 | [dashboard-service.md](docs/hermes/dashboard-service.md) | Dashboard as a background service |
+| [serve.md](docs/hermes/serve.md) | Day 2 — headless backend (`hermes serve`) |
 | [gateway-platforms.md](docs/hermes/gateway-platforms.md) | Day 2 — Telegram and SimpleX |
 | [GITHUB_TEMPLATES.md](docs/GITHUB_TEMPLATES.md) | Issue and PR templates |
 | [AGENTS.md](AGENTS.md) | Repo conventions |
 
 ## Hermes Agent
 
-Install, uninstall, dashboard, day-2 gateway platforms, and profile templates. Index: [docs/hermes/README.md](docs/hermes/README.md).
+Install, uninstall, dashboard, headless serve, day-2 gateway platforms, and profile templates. Index: [docs/hermes/README.md](docs/hermes/README.md).
 
 ## Forks
 

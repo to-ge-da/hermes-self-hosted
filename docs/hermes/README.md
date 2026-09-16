@@ -8,4 +8,5 @@ Install and run Hermes Agent. Bootstrap and hardening are in [INSTALLATION.md](.
 | [gateway-platforms.md](gateway-platforms.md) | Day 2 — Telegram and SimpleX on the gateway unit |
 | [uninstall.md](uninstall.md) | Remove Hermes Agent |
 | [dashboard-service.md](dashboard-service.md) | Dashboard as a background service |
+| [serve.md](serve.md) | Day 2 — headless backend (`hermes serve`) |
 | [profile-templates.md](profile-templates.md) | USER.md / MEMORY.md starters |
