@@ -141,4 +141,5 @@ Look for Playwright Chromium. Gateway unit should be active. Provider / API key:
 - Deployment targets: [README.md](../README.md)
 - Uninstall: [uninstall.md](hermes/uninstall.md)
 - Dashboard service: [dashboard-service.md](hermes/dashboard-service.md)
+- Day 2 — headless backend (`hermes serve`): [serve.md](hermes/serve.md)
 - Day 2 — messaging apps: [gateway-platforms.md](hermes/gateway-platforms.md)
